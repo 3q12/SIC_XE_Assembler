@@ -39,18 +39,18 @@ int main(int args, char *arg[])
 		printf("assem_pass1: 패스1 과정에서 실패하였습니다.  \n");
 		return -1;
 	}
-	make_opcode_output("output_00000000");
+	make_opcode_output("output_20160345");
 
 	/*
 	* 추후 프로젝트에서 사용되는 부분
 	
-	make_symtab_output("symtab_00000000");
+	make_symtab_output("symtab_20160345");
 	if(assem_pass2() < 0 ){
 		printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n") ; 
 		return -1 ; 
 	}
 
-	make_objectcode_output("output_00000000") ; 
+	make_objectcode_output("output_20160345") ; 
 	*/
 	return 0;
 }
@@ -83,18 +83,31 @@ int init_my_assembler(void)
  * 주의 : 기계어 목록파일 형식은 자유롭게 구현한다. 예시는 다음과 같다.
  *	
  *	===============================================================================
- *		   | 이름 | 형식 | 기계어 코드 | 오퍼랜드의 갯수 | NULL|
+ *		   | 이름 | 형식 | 기계어 코드 | 오퍼랜드의 갯수 |
  *	===============================================================================	   
- *		
+ *          형식 : 0 = format 3/4  1 = format1	2 = format2	
  * ----------------------------------------------------------------------------------
  */
 int init_inst_file(char *inst_file)
 {
 	FILE *file;
 	int errno;
-
-	/* add your code here */
-
+    inst_index = 0;
+    file = fopen(inst_file, "r");
+    while (1) {
+        inst* instUnit = calloc(1,sizeof(inst));
+        if (fscanf(file, "|%[^|]s", instUnit->mnemonic) < 0)
+            break;
+        fscanf(file,"|%hd|%hx|%hd|\n",
+            &instUnit->format,
+            &instUnit->opcode,
+            &instUnit->operands);
+        inst_table[inst_index++] = instUnit;
+    }
+    /* to test init
+    for (int i = 0; i < inst_index; i++)
+        printf("%-6s  |  %1d  |  %02X  |  %1d \n", inst_table[i]->mnemonic, inst_table[i]->format, inst_table[i]->opcode, inst_table[i]->operands);
+    */
 	return errno;
 }
 
@@ -109,10 +122,24 @@ int init_inst_file(char *inst_file)
 int init_input_file(char *input_file)
 {
 	FILE *file;
+    char* buffer;
 	int errno;
+    line_num = 0;
 
-	/* add your code here */
-
+    file = fopen(input_file, "r");
+    while (1) {
+        char buf[100];
+        if(fscanf(file, "%[^\n]s", buf)<0)
+            break;
+        fgetc(file);                                        //fscanf에서 처리하고 남은 \n문자 날리기
+        char *data = (char*)calloc(strlen(buf)+1, sizeof(char));
+        strcpy(data, buf);
+        input_data[line_num++] = data;
+    }
+    /* to test init
+    for (int i = 0; i < inst_index; i++)
+        printf("%s\n", input_data[i]);
+    */
 	return errno;
 }
 
@@ -126,7 +153,106 @@ int init_input_file(char *input_file)
  */
 int token_parsing(char *str)
 {
-	/* add your code here */
+    //토큰 테이블에 추가
+
+    token* newToken = calloc(1, sizeof(token));
+
+
+    char buf[100] = { 0, };
+    int cur = 0;
+    for (int i = cur; i < strlen(input_data[token_line]); i++) {
+        if (input_data[token_line][i] == '\t'|| i== (strlen(input_data[token_line]))) {
+            cur = i+1;
+            break;
+        }
+        buf[i-cur] = input_data[token_line][i];
+    }
+    if (strlen(buf) > 0) {
+        char* newLabel = calloc(strlen(buf), sizeof(char));
+        strcpy(newLabel, buf);
+        newToken->label = newLabel;
+    }
+
+
+    memset(buf, 0, sizeof(buf));
+    for (int i = cur; i < strlen(input_data[token_line]); i++) {
+        if (input_data[token_line][i] == '\t' || i == (strlen(input_data[token_line]) )) {
+            cur = i+1;
+            break;
+        }
+        buf[i-cur] = input_data[token_line][i];
+    }
+    if (strlen(buf) > 0) {
+        char* newOperator = calloc(strlen(buf), sizeof(char));
+        strcpy(newOperator, buf);
+        newToken->operator = newOperator;
+    }
+
+
+
+    memset(buf, 0, sizeof(buf));
+    for (int i = cur; i < strlen(input_data[token_line]); i++) {
+        if (input_data[token_line][i] == '\t' || i == (strlen(input_data[token_line]))) {
+            cur = i+1;
+            break;
+        }
+        buf[i-cur] = input_data[token_line][i];
+    }
+    char* operandBuf = strtok(buf, ",");
+    if (strlen(buf) > 0) {
+        for (int i = 0;; i++) {
+            if (operandBuf == NULL)
+                break;
+            char* newOperand = calloc(strlen(operandBuf), sizeof(char));
+            strcpy(newOperand, operandBuf);
+            newToken->operand[i] = newOperand;
+
+            operandBuf = strtok(NULL, ",");
+        }
+    }
+
+
+    memset(buf, 0, sizeof(buf));
+    for (int i = cur; i < strlen(input_data[token_line]); i++) {
+        if (input_data[token_line][i] == '\t') {
+            cur = i+1;
+            break;
+        }
+        buf[i-cur] = input_data[token_line][i];
+    }
+    if (strlen(buf) > 0) {
+        char* newComment = calloc(strlen(buf), sizeof(char));
+        strcpy(newComment, buf);
+        newToken->comment = newComment;
+    }
+
+
+    token_table[token_line] = newToken;
+
+    char* tmp = input_data[token_line];
+    free(tmp);
+    /* to test table
+    if (token_table[token_line]->label != NULL)
+        printf("%s\t", token_table[token_line]->label);
+    else
+        printf("\t");
+    if (token_table[token_line]->operator != NULL)
+        printf("%s\t", token_table[token_line]->operator);
+    else
+        printf("\t");
+    if (token_table[token_line]->operand != NULL)
+        for (int i = 0;i<3; i++) {
+            if (token_table[token_line]->operand[i] == NULL)
+                break;
+            printf("%s\t", token_table[token_line]->operand[i]);
+        }
+    else
+        printf("\t");
+    if (token_table[token_line]->comment != NULL)
+        printf("%s", token_table[token_line]->comment);
+    printf("\n");
+    */
+    return 0;
 }
 
 /* ----------------------------------------------------------------------------------
@@ -139,7 +265,15 @@ int token_parsing(char *str)
  */
 int search_opcode(char *str)
 {
-	/* add your code here */
+    // 검사 로직.
+    for(int i = 0; i<inst_index;i++){
+        if (str[0] == '+')
+            str = &str[1];
+        if(strcmp(inst_table[i]->mnemonic,str)==0)
+            return i;
+        }
+    
+    return -1;
 }
 
 /* ----------------------------------------------------------------------------------
@@ -157,11 +291,18 @@ int search_opcode(char *str)
 */
 static int assem_pass1(void)
 {
-	/* add your code here */
 
 	/* input_data의 문자열을 한줄씩 입력 받아서 
 	 * token_parsing()을 호출하여 token_unit에 저장
 	 */
+
+    for (token_line = 0; token_line < line_num-1; token_line++) {
+        if (input_data[token_line][0] == '.')
+            continue;
+        if (token_parsing(input_data[token_line]))
+            return -1;
+    }
+
 }
 
 /* ----------------------------------------------------------------------------------
@@ -176,7 +317,68 @@ static int assem_pass1(void)
 */
 void make_opcode_output(char *file_name)
 {
-	/* add your code here */
+
+    FILE* file = fopen(file_name, "w");
+    for (int i = 0; i < token_line; i++) {
+        if (token_table[i] != NULL) {
+            if (token_table[i]->label != NULL)
+                fprintf(file, "%s\t", token_table[i]->label);
+            else
+                fprintf(file, "\t");
+            if (token_table[i]->operator != NULL)
+                fprintf(file, "%s\t", token_table[i]->operator);
+            else
+                fprintf(file, "\t");
+            if (token_table[i]->operand != NULL)
+                for (int j = 0; j < 3; j++) {
+                    if (token_table[i]->operand[j] != NULL) {
+                        if (j > 0)
+                            fprintf(file, ",");
+                        fprintf(file, "%s", token_table[i]->operand[j]);
+                    }
+
+                }
+            else
+                fprintf(file, "\t");
+            int opIndex = search_opcode(token_table[i]->operator);
+            if (opIndex > 0)
+                fprintf(file, "\t\t\t%02X", inst_table[opIndex]->opcode);
+            fprintf(file, "\n");
+        }
+        else
+            fprintf(file, "%s\n", input_data[i]);
+    }
+
+
+    for (int i = 0; i < token_line-1; i++) {
+        if (token_table[i] != NULL) {
+            if (token_table[i]->label != NULL)
+                printf("%s\t", token_table[i]->label);
+            else
+                printf("\t");
+            if (token_table[i]->operator != NULL)
+                printf("%s\t", token_table[i]->operator);
+            else
+                printf("\t");
+            if (token_table[i]->operand != NULL)
+                for (int j = 0; j < 3; j++) {
+                    if (token_table[i]->operand[j] != NULL) {
+                        if (j > 0)
+                            printf(",");
+                        printf("%s", token_table[i]->operand[j]);
+                    }
+
+                }
+            else
+                printf("\t");
+            int opIndex = search_opcode(token_table[i]->operator);
+            if (opIndex > 0)
+                printf("\t\t%02X", inst_table[opIndex]->opcode);
+            printf("\n");
+        }
+        else
+            printf("%s\n", input_data[i]);
+    }
 }
 
 /* ----------------------------------------------------------------------------------

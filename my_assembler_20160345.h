@@ -5,7 +5,6 @@
 #define MAX_INST 256
 #define MAX_LINES 5000
 #define MAX_OPERAND 3
-
 /*
  * instruction 목록 파일로 부터 정보를 받아와서 생성하는 구조체 변수이다.
  * 구조는 각자의 instruction set의 양식에 맞춰 직접 구현하되
@@ -13,6 +12,10 @@
  */
 struct inst_unit
 {
+    char mnemonic[7];
+    unsigned short format; //  3/4format 일시 0
+    unsigned short opcode;
+    unsigned short operands;
     /* add your code here */
 };
 
