@@ -104,10 +104,7 @@ int init_inst_file(char *inst_file)
             &instUnit->operands);
         inst_table[inst_index++] = instUnit;
     }
-    /* to test init
-    for (int i = 0; i < inst_index; i++)
-        printf("%-6s  |  %1d  |  %02X  |  %1d \n", inst_table[i]->mnemonic, inst_table[i]->format, inst_table[i]->opcode, inst_table[i]->operands);
-    */
+
 	return errno;
 }
 
@@ -136,10 +133,7 @@ int init_input_file(char *input_file)
         strcpy(data, buf);
         input_data[line_num++] = data;
     }
-    /* to test init
-    for (int i = 0; i < inst_index; i++)
-        printf("%s\n", input_data[i]);
-    */
+
 	return errno;
 }
 
@@ -231,27 +225,7 @@ int token_parsing(char *str)
 
     char* tmp = input_data[token_line];
     free(tmp);
-    /* to test table
-    if (token_table[token_line]->label != NULL)
-        printf("%s\t", token_table[token_line]->label);
-    else
-        printf("\t");
-    if (token_table[token_line]->operator != NULL)
-        printf("%s\t", token_table[token_line]->operator);
-    else
-        printf("\t");
-    if (token_table[token_line]->operand != NULL)
-        for (int i = 0;i<3; i++) {
-            if (token_table[token_line]->operand[i] == NULL)
-                break;
-            printf("%s\t", token_table[token_line]->operand[i]);
-        }
-    else
-        printf("\t");
-    if (token_table[token_line]->comment != NULL)
-        printf("%s", token_table[token_line]->comment);
-    printf("\n");
-    */
+
     return 0;
 }
 
