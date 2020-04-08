@@ -165,12 +165,16 @@ int token_parsing(char* str)
 	buf = tokenizer(buf, &newToken->operator,'\t');
 
 	buf = tokenizer(buf, &operandsBuf, '\t');
+
+	tokenizer(buf, &newToken->comment, '\t');
+
+	// operands 를 operand로 쪼개서 저장하는 기능
 	if (operandsBuf != NULL) {
 		char* operandBuf = strtok(operandsBuf, ",");
 		for (int i = 0;; i++) {
 			if (operandBuf == NULL)
 				break;
-			char* newOperand = calloc(strlen(operandBuf), sizeof(char));
+			char* newOperand = calloc(strlen(operandBuf)+1, sizeof(char));
 			strcpy(newOperand, operandBuf);
 			newToken->operand[i] = newOperand;
 
@@ -178,17 +182,14 @@ int token_parsing(char* str)
 		}
 	}
 
-	tokenizer(buf, &newToken->comment, '\t');
-
 	token_table[token_line] = newToken;
 
-	char* tmp = input_data[token_line];
-	free(tmp);
+	free(input_data[token_line]);
 
 	return 0;
 }
 /* ----------------------------------------------------------------------------------
- * 설명 : 문자열을 구분자로 분리해주는 함수이다.
+ * 설명 : 문자열을 구분자로 분리해 char* 에 동적할당된 배열값으로 넘겨주는 함수이다.
  * 매계 : 문자열, 토큰이 저장될 주소, 구분자
  * 반환 : 실행시 발견한 구분자 이후의 문자열, 문자열 끝까지 탐색을 했으면 NULL을 반환.
  * 주의 : 주어진 문자열이 NULL이거나 구분자를 찾을수 없으면 dest에 NULL값이 저장된다.
@@ -212,7 +213,7 @@ char* tokenizer(char* str, char** dest, char delimeter) {
 	}
 
 	if (strlen(buf) > 0) {
-		char* token = (char*)calloc(strlen(buf), sizeof(char));
+		char* token = (char*)calloc(strlen(buf)+1, sizeof(char));
 
 		strcpy(token, buf);
 		*dest = token;
@@ -235,7 +236,6 @@ char* tokenizer(char* str, char** dest, char delimeter) {
  */
 int search_opcode(char* str)
 {
-	// 검사 로직.
 	for (int i = 0; i < inst_index; i++) {
 
 		if (str[0] == '+')
@@ -263,8 +263,8 @@ int search_opcode(char* str)
 */
 static int assem_pass1(void)
 {
-
-	/* input_data의 문자열을 한줄씩 입력 받아서
+	/* 
+	 * input_data의 문자열을 한줄씩 입력 받아서
 	 * token_parsing()을 호출하여 token_unit에 저장
 	 */
 
@@ -295,16 +295,18 @@ void make_opcode_output(char* file_name)
 	sprintf(file_name_ext, "%s.txt", file_name);
 	FILE* file = fopen(file_name_ext, "w");
 	int operandsLength = 0;
+	char* freePtr = 0;
+
 	for (int i = 0; i < token_line; i++) {
 		if (token_table[i] != NULL) {
 
 			if (token_table[i]->label != NULL)
 				fprintf(file, "%s", token_table[i]->label);
-				fprintf(file, "\t");
+			fprintf(file, "\t");
 
 			if (token_table[i]->operator != NULL)
 				fprintf(file, "%s", token_table[i]->operator);
-				fprintf(file, "\t");
+			fprintf(file, "\t");
 
 			char operands[100] = { 0, };					// 이름필드 1개당 최대 31자 사용가능,  MAX_OPERAND == 3 이기때문에 버퍼가 충분하다
 			for (int j = 0; j < 3; j++) {
@@ -312,23 +314,31 @@ void make_opcode_output(char* file_name)
 					if (j > 0)
 						strcat(operands, ", ");
 					strcat(operands, token_table[i]->operand[j]);
+					free((token_table[i]->operand[j]));
 				}
 				else
 					break;
 			}
 			fprintf(file, "%s\t", operands);
 
+
 			if (strlen(operands) < 7 || strchr(operands, '\'') != NULL || strchr(operands, '.') != NULL) // OPcode를 이쁘게 정렬하기 위한 코드
 				fprintf(file, "\t");
 
 			int opIndex = search_opcode(token_table[i]->operator);
 			if (opIndex > 0)
-				fprintf(file, "%02X", inst_table[opIndex]->opcode);
+				fprintf(file, "\t%02X", inst_table[opIndex]->opcode);
 
 			fprintf(file, "\n");
+			free(&token_table[i]->label[0]);
+			free(&token_table[i]->operator[0]);
+			free(&token_table[i]->comment[0]);
+			free(token_table[i]);
 		}
-		else
+		else {
 			fprintf(file, "%s\n", input_data[i]);
+			free(input_data[i]);
+		}
 	}
 }
 
