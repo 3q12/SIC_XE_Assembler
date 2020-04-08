@@ -88,22 +88,25 @@ int init_my_assembler(void)
  *          형식 : 0 = format 3/4  1 = format1	2 = format2	
  * ----------------------------------------------------------------------------------
  */
-int init_inst_file(char *inst_file)
+int init_inst_file(char* inst_file)
 {
-	FILE *file;
+	FILE* file;
 	int errno;
-    inst_index = 0;
-    file = fopen(inst_file, "r");
-    while (1) {
-        inst* instUnit = calloc(1,sizeof(inst));
-        if (fscanf(file, "|%[^|]s", instUnit->mnemonic) < 0)
-            break;
-        fscanf(file,"|%hd|%hx|%hd|\n",
-            &instUnit->format,
-            &instUnit->opcode,
-            &instUnit->operands);
-        inst_table[inst_index++] = instUnit;
-    }
+	inst_index = 0;
+	file = fopen(inst_file, "r");
+
+	while (1) {
+		inst* instUnit = calloc(1, sizeof(inst));
+
+		if (fscanf(file, "|%[^|]s", instUnit->mnemonic) < 0)
+			break;
+
+		fscanf(file, "|%hd|%hx|%hd|\n",
+			&instUnit->format,
+			&instUnit->opcode,
+			&instUnit->operands);
+		inst_table[inst_index++] = instUnit;
+	}
 
 	return errno;
 }
@@ -116,23 +119,23 @@ int init_inst_file(char *inst_file)
  *		
  * ----------------------------------------------------------------------------------
  */
-int init_input_file(char *input_file)
+int init_input_file(char* input_file)
 {
-	FILE *file;
-    char* buffer;
+	FILE* file;
+	char* buffer;
 	int errno;
-    line_num = 0;
+	line_num = 0;
 
-    file = fopen(input_file, "r");
-    while (1) {
-        char buf[100];
-        if(fscanf(file, "%[^\n]s", buf)<0)
-            break;
-        fgetc(file);                                                  
-        char *data = (char*)calloc(strlen(buf)+1, sizeof(char));
-        strcpy(data, buf);
-        input_data[line_num++] = data;
-    }
+	file = fopen(input_file, "r");
+	while (1) {
+		char buf[100];
+		if (fscanf(file, "%[^\n]s", buf) < 0)
+			break;
+		fgetc(file);
+		char* data = (char*)calloc(strlen(buf) + 1, sizeof(char));
+		strcpy(data, buf);
+		input_data[line_num++] = data;
+	}
 
 	return errno;
 }
@@ -145,66 +148,67 @@ int init_input_file(char *input_file)
  * 주의 : my_assembler 프로그램에서는 라인단위로 토큰 및 오브젝트 관리를 하고 있다. 
  * ----------------------------------------------------------------------------------
  */
-int token_parsing(char *str)
+int token_parsing(char* str)
 {
-    token* newToken = calloc(1, sizeof(token));
+	token* newToken = calloc(1, sizeof(token));
 
-    char* buf = 0, *operandBuf = 0;;
-    int cur = 0;
-    operandBuf = tokenizer(str, &newToken->label,'\t');
-    operandBuf = tokenizer(operandBuf, &newToken->operator,'\t');
-    operandBuf = tokenizer(operandBuf, &buf, '\t');
-    if (buf!= NULL) {
-        char* operandBuf = strtok(buf, ",");
-        for (int i = 0;; i++) {
-            if (operandBuf == NULL)
-                break;
-            char* newOperand = calloc(strlen(operandBuf), sizeof(char));
-            strcpy(newOperand, operandBuf);
-            newToken->operand[i] = newOperand;
+	char* buf = 0, * operandsBuf = 0;
+	int cur = 0;
+	buf = tokenizer(str, &newToken->label, '\t');
+	buf = tokenizer(buf, &newToken->operator,'\t');
+	buf = tokenizer(buf, &operandsBuf, '\t');
+	if (operandsBuf != NULL) {
+		char* operandBuf = strtok(operandsBuf, ",");
+		for (int i = 0;; i++) {
+			if (operandBuf == NULL)
+				break;
+			char* newOperand = calloc(strlen(operandBuf), sizeof(char));
+			strcpy(newOperand, operandBuf);
+			newToken->operand[i] = newOperand;
 
-            operandBuf = strtok(NULL, ",");
-        }
-    }
-    tokenizer(operandBuf, &newToken->comment, '\t');
-    token_table[token_line] = newToken;
+			operandBuf = strtok(NULL, ",");
+		}
+	}
+	tokenizer(buf, &newToken->comment, '\t');
+	token_table[token_line] = newToken;
 
-    char* tmp = input_data[token_line];
-    free(tmp);
+	char* tmp = input_data[token_line];
+	free(tmp);
 
-    return 0;
+	return 0;
 }
 /* ----------------------------------------------------------------------------------
- * 설명 : 문자열을 구분자로 분리해주는 함수이다..
+ * 설명 : 문자열을 구분자로 분리해주는 함수이다.
  * 매계 : 문자열, 토큰이 저장될 주소, 구분자
- * 반환 : 발견한 구분자 다음 주소
- * 주의 : .
+ * 반환 : 실행시 발견한 구분자 이후의 문자열, 문자열 끝까지 탐색을 했으면 NULL을 반환.
+ * 주의 : 주어진 문자열이 NULL이거나 구분자를 찾을수 없으면 dest에 NULL값이 저장된다.
  * ----------------------------------------------------------------------------------
  */
-char *tokenizer(char* str, char** dest, char delimeter) {
-    if (str == NULL) {
-        dest = NULL;
-        return NULL;
-    }
-    char buf[100] = { 0, };
-    int i = 0;
-    for (i= 0; i < strlen(str); i++) {
-        if (str[i] == delimeter || i == (strlen(str))) {
-            break;
-        }
-        buf[i] = str[i];
-    }
-    if (strlen(buf) > 0) {
-        char* token = (char*)calloc(strlen(buf), sizeof(char));
-        strcpy(token, buf);
-        *dest = token;
-    }
-    else
-        dest = NULL;
-    if (i == strlen(str))
-        return NULL;
-    else
-        return &str[i+1];
+char* tokenizer(char* str, char** dest, char delimeter) {
+	if (str == NULL) {
+		dest = NULL;
+		return NULL;
+	}
+	char buf[100] = { 0, };
+	int i = 0;
+	for (i = 0; i < strlen(str); i++) {
+		if (str[i] == delimeter || i == (strlen(str)))
+			break;
+
+		buf[i] = str[i];
+	}
+	if (strlen(buf) > 0) {
+		char* token = (char*)calloc(strlen(buf), sizeof(char));
+
+		strcpy(token, buf);
+		*dest = token;
+	}
+	else
+		dest = NULL;
+	if (i == strlen(str))
+		return NULL;
+	else
+		return &str[i + 1];
 }
 /* ----------------------------------------------------------------------------------
  * 설명 : 입력 문자열이 기계어 코드인지를 검사하는 함수이다. 
@@ -214,17 +218,17 @@ char *tokenizer(char* str, char** dest, char delimeter) {
  *		
  * ----------------------------------------------------------------------------------
  */
-int search_opcode(char *str)
+int search_opcode(char* str)
 {
-    // 검사 로직.
-    for(int i = 0; i<inst_index;i++){
-        if (str[0] == '+')
-            str = &str[1];
-        if(strcmp(inst_table[i]->mnemonic,str)==0)
-            return i;
-        }
-    
-    return -1;
+	// 검사 로직.
+	for (int i = 0; i < inst_index; i++) {
+		if (str[0] == '+')
+			str = &str[1];
+		if (strcmp(inst_table[i]->mnemonic, str) == 0)
+			return i;
+	}
+
+	return -1;
 }
 
 /* ----------------------------------------------------------------------------------
@@ -243,16 +247,16 @@ int search_opcode(char *str)
 static int assem_pass1(void)
 {
 
-	/* input_data의 문자열을 한줄씩 입력 받아서 
+	/* input_data의 문자열을 한줄씩 입력 받아서
 	 * token_parsing()을 호출하여 token_unit에 저장
 	 */
 
-    for (token_line = 0; token_line < line_num-1; token_line++) {
-        if (input_data[token_line][0] == '.')
-            continue;
-        if (token_parsing(input_data[token_line]))
-            return -1;
-    }
+	for (token_line = 0; token_line < line_num - 1; token_line++) {
+		if (input_data[token_line][0] == '.')
+			continue;
+		if (token_parsing(input_data[token_line]))
+			return -1;
+	}
 
 }
 
@@ -266,39 +270,42 @@ static int assem_pass1(void)
 *        또한 과제 4번에서만 쓰이는 함수이므로 이후의 프로젝트에서는 사용되지 않는다.
 * -----------------------------------------------------------------------------------
 */
-void make_opcode_output(char *file_name)
+void make_opcode_output(char* file_name)
 {
-    char file_name_ext[20] = { 0, } ;
-    sprintf(file_name_ext,"%s.txt", file_name);
-    FILE* file = fopen(file_name_ext, "w");
-    for (int i = 0; i < token_line; i++) {
-        if (token_table[i] != NULL) {
-            if (token_table[i]->label != NULL)
-                fprintf(file, "%s\t", token_table[i]->label);
-            else
-                fprintf(file, "\t");
-            if (token_table[i]->operator != NULL)
-                fprintf(file, "%s\t", token_table[i]->operator);
-            else
-                fprintf(file, "\t");
-            if (token_table[i]->operand != NULL)
-                for (int j = 0; j < 3; j++) {
-                    if (token_table[i]->operand[j] != NULL) {
-                        if (j > 0)
-                            fprintf(file, ", ");
-                        fprintf(file, "%s", token_table[i]->operand[j]);
-                    }
-                }
-            else
-                fprintf(file, "\t");
-            int opIndex = search_opcode(token_table[i]->operator);
-            if (opIndex > 0)
-                fprintf(file, "\t\t%02X", inst_table[opIndex]->opcode);
-            fprintf(file, "\n");
-        }
-        else
-            fprintf(file, "%s\n", input_data[i]);
-    }
+	char file_name_ext[20] = { 0, };
+	sprintf(file_name_ext, "%s.txt", file_name);
+	FILE* file = fopen(file_name_ext, "w");
+
+	for (int i = 0; i < token_line; i++) {
+		if (token_table[i] != NULL) {
+			if (token_table[i]->label != NULL)
+				fprintf(file, "%s\t", token_table[i]->label);
+			else
+				fprintf(file, "\t");
+
+			if (token_table[i]->operator != NULL)
+				fprintf(file, "%s\t", token_table[i]->operator);
+			else
+				fprintf(file, "\t");
+
+			for (int j = 0; j < 3; j++) {
+				if (token_table[i]->operand[j] != NULL) {
+					if (j > 0)
+						fprintf(file, ", ");
+					fprintf(file, "%s", token_table[i]->operand[j]);
+				}
+				else
+					break;
+			}
+	
+			int opIndex = search_opcode(token_table[i]->operator);
+			if (opIndex > 0)
+				fprintf(file, "\t\t%02X", inst_table[opIndex]->opcode);
+			fprintf(file, "\n");
+		}
+		else
+			fprintf(file, "%s\n", input_data[i]);
+	}
 }
 
 /* ----------------------------------------------------------------------------------
