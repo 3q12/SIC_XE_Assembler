@@ -85,6 +85,7 @@ int init_my_assembler(void);
 int init_inst_file(char *inst_file);
 int init_input_file(char *input_file);
 int token_parsing(char *str);
+char* tokenizer(char* str, char** dest, char delimeter);
 int search_opcode(char *str);
 static int assem_pass1(void);
 void make_opcode_output(char *file_name);

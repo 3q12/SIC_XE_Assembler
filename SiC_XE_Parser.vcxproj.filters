@@ -28,7 +28,7 @@
     <None Include="inst.data">
       <Filter>리소스 파일</Filter>
     </None>
-    <None Include="output_20160345">
+    <None Include="output_20160345.txt">
       <Filter>리소스 파일</Filter>
     </None>
   </ItemGroup>

@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="inst.data" />
-    <None Include="output_20160345" />
+    <None Include="output_20160345.txt" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="input.txt" />

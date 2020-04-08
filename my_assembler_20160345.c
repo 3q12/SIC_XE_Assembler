@@ -128,7 +128,7 @@ int init_input_file(char *input_file)
         char buf[100];
         if(fscanf(file, "%[^\n]s", buf)<0)
             break;
-        fgetc(file);                                        //fscanf에서 처리하고 남은 \n문자 날리기
+        fgetc(file);                                                  
         char *data = (char*)calloc(strlen(buf)+1, sizeof(char));
         strcpy(data, buf);
         input_data[line_num++] = data;
@@ -147,53 +147,15 @@ int init_input_file(char *input_file)
  */
 int token_parsing(char *str)
 {
-    //토큰 테이블에 추가
-
     token* newToken = calloc(1, sizeof(token));
 
-
-    char buf[100] = { 0, };
+    char* buf = 0, *operandBuf = 0;;
     int cur = 0;
-    for (int i = cur; i < strlen(input_data[token_line]); i++) {
-        if (input_data[token_line][i] == '\t'|| i== (strlen(input_data[token_line]))) {
-            cur = i+1;
-            break;
-        }
-        buf[i-cur] = input_data[token_line][i];
-    }
-    if (strlen(buf) > 0) {
-        char* newLabel = calloc(strlen(buf), sizeof(char));
-        strcpy(newLabel, buf);
-        newToken->label = newLabel;
-    }
-
-
-    memset(buf, 0, sizeof(buf));
-    for (int i = cur; i < strlen(input_data[token_line]); i++) {
-        if (input_data[token_line][i] == '\t' || i == (strlen(input_data[token_line]) )) {
-            cur = i+1;
-            break;
-        }
-        buf[i-cur] = input_data[token_line][i];
-    }
-    if (strlen(buf) > 0) {
-        char* newOperator = calloc(strlen(buf), sizeof(char));
-        strcpy(newOperator, buf);
-        newToken->operator = newOperator;
-    }
-
-
-
-    memset(buf, 0, sizeof(buf));
-    for (int i = cur; i < strlen(input_data[token_line]); i++) {
-        if (input_data[token_line][i] == '\t' || i == (strlen(input_data[token_line]))) {
-            cur = i+1;
-            break;
-        }
-        buf[i-cur] = input_data[token_line][i];
-    }
-    char* operandBuf = strtok(buf, ",");
-    if (strlen(buf) > 0) {
+    operandBuf = tokenizer(str, &newToken->label,'\t');
+    operandBuf = tokenizer(operandBuf, &newToken->operator,'\t');
+    operandBuf = tokenizer(operandBuf, &buf, '\t');
+    if (buf!= NULL) {
+        char* operandBuf = strtok(buf, ",");
         for (int i = 0;; i++) {
             if (operandBuf == NULL)
                 break;
@@ -204,23 +166,7 @@ int token_parsing(char *str)
             operandBuf = strtok(NULL, ",");
         }
     }
-
-
-    memset(buf, 0, sizeof(buf));
-    for (int i = cur; i < strlen(input_data[token_line]); i++) {
-        if (input_data[token_line][i] == '\t') {
-            cur = i+1;
-            break;
-        }
-        buf[i-cur] = input_data[token_line][i];
-    }
-    if (strlen(buf) > 0) {
-        char* newComment = calloc(strlen(buf), sizeof(char));
-        strcpy(newComment, buf);
-        newToken->comment = newComment;
-    }
-
-
+    tokenizer(operandBuf, &newToken->comment, '\t');
     token_table[token_line] = newToken;
 
     char* tmp = input_data[token_line];
@@ -228,7 +174,38 @@ int token_parsing(char *str)
 
     return 0;
 }
-
+/* ----------------------------------------------------------------------------------
+ * 설명 : 문자열을 구분자로 분리해주는 함수이다..
+ * 매계 : 문자열, 토큰이 저장될 주소, 구분자
+ * 반환 : 발견한 구분자 다음 주소
+ * 주의 : .
+ * ----------------------------------------------------------------------------------
+ */
+char *tokenizer(char* str, char** dest, char delimeter) {
+    if (str == NULL) {
+        dest = NULL;
+        return NULL;
+    }
+    char buf[100] = { 0, };
+    int i = 0;
+    for (i= 0; i < strlen(str); i++) {
+        if (str[i] == delimeter || i == (strlen(str))) {
+            break;
+        }
+        buf[i] = str[i];
+    }
+    if (strlen(buf) > 0) {
+        char* token = (char*)calloc(strlen(buf), sizeof(char));
+        strcpy(token, buf);
+        *dest = token;
+    }
+    else
+        dest = NULL;
+    if (i == strlen(str))
+        return NULL;
+    else
+        return &str[i+1];
+}
 /* ----------------------------------------------------------------------------------
  * 설명 : 입력 문자열이 기계어 코드인지를 검사하는 함수이다. 
  * 매계 : 토큰 단위로 구분된 문자열 
@@ -291,8 +268,9 @@ static int assem_pass1(void)
 */
 void make_opcode_output(char *file_name)
 {
-
-    FILE* file = fopen(file_name, "w");
+    char file_name_ext[20] = { 0, } ;
+    sprintf(file_name_ext,"%s.txt", file_name);
+    FILE* file = fopen(file_name_ext, "w");
     for (int i = 0; i < token_line; i++) {
         if (token_table[i] != NULL) {
             if (token_table[i]->label != NULL)
@@ -307,51 +285,19 @@ void make_opcode_output(char *file_name)
                 for (int j = 0; j < 3; j++) {
                     if (token_table[i]->operand[j] != NULL) {
                         if (j > 0)
-                            fprintf(file, ",");
+                            fprintf(file, ", ");
                         fprintf(file, "%s", token_table[i]->operand[j]);
                     }
-
                 }
             else
                 fprintf(file, "\t");
             int opIndex = search_opcode(token_table[i]->operator);
             if (opIndex > 0)
-                fprintf(file, "\t\t\t%02X", inst_table[opIndex]->opcode);
+                fprintf(file, "\t\t%02X", inst_table[opIndex]->opcode);
             fprintf(file, "\n");
         }
         else
             fprintf(file, "%s\n", input_data[i]);
-    }
-
-
-    for (int i = 0; i < token_line-1; i++) {
-        if (token_table[i] != NULL) {
-            if (token_table[i]->label != NULL)
-                printf("%s\t", token_table[i]->label);
-            else
-                printf("\t");
-            if (token_table[i]->operator != NULL)
-                printf("%s\t", token_table[i]->operator);
-            else
-                printf("\t");
-            if (token_table[i]->operand != NULL)
-                for (int j = 0; j < 3; j++) {
-                    if (token_table[i]->operand[j] != NULL) {
-                        if (j > 0)
-                            printf(",");
-                        printf("%s", token_table[i]->operand[j]);
-                    }
-
-                }
-            else
-                printf("\t");
-            int opIndex = search_opcode(token_table[i]->operator);
-            if (opIndex > 0)
-                printf("\t\t%02X", inst_table[opIndex]->opcode);
-            printf("\n");
-        }
-        else
-            printf("%s\n", input_data[i]);
     }
 }
 
