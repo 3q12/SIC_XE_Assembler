@@ -105,6 +105,7 @@ int init_inst_file(char* inst_file)
 			&instUnit->format,
 			&instUnit->opcode,
 			&instUnit->operands);
+
 		inst_table[inst_index++] = instUnit;
 	}
 
@@ -127,11 +128,15 @@ int init_input_file(char* input_file)
 	line_num = 0;
 
 	file = fopen(input_file, "r");
+
 	while (1) {
+
 		char buf[100];
+
 		if (fscanf(file, "%[^\n]s", buf) < 0)
 			break;
 		fgetc(file);
+
 		char* data = (char*)calloc(strlen(buf) + 1, sizeof(char));
 		strcpy(data, buf);
 		input_data[line_num++] = data;
@@ -154,8 +159,11 @@ int token_parsing(char* str)
 
 	char* buf = 0, * operandsBuf = 0;
 	int cur = 0;
+
 	buf = tokenizer(str, &newToken->label, '\t');
+
 	buf = tokenizer(buf, &newToken->operator,'\t');
+
 	buf = tokenizer(buf, &operandsBuf, '\t');
 	if (operandsBuf != NULL) {
 		char* operandBuf = strtok(operandsBuf, ",");
@@ -169,7 +177,9 @@ int token_parsing(char* str)
 			operandBuf = strtok(NULL, ",");
 		}
 	}
+
 	tokenizer(buf, &newToken->comment, '\t');
+
 	token_table[token_line] = newToken;
 
 	char* tmp = input_data[token_line];
@@ -185,18 +195,22 @@ int token_parsing(char* str)
  * ----------------------------------------------------------------------------------
  */
 char* tokenizer(char* str, char** dest, char delimeter) {
+
 	if (str == NULL) {
 		dest = NULL;
 		return NULL;
 	}
+
 	char buf[100] = { 0, };
 	int i = 0;
+
 	for (i = 0; i < strlen(str); i++) {
 		if (str[i] == delimeter || i == (strlen(str)))
 			break;
 
 		buf[i] = str[i];
 	}
+
 	if (strlen(buf) > 0) {
 		char* token = (char*)calloc(strlen(buf), sizeof(char));
 
@@ -205,6 +219,7 @@ char* tokenizer(char* str, char** dest, char delimeter) {
 	}
 	else
 		dest = NULL;
+
 	if (i == strlen(str))
 		return NULL;
 	else
@@ -222,8 +237,10 @@ int search_opcode(char* str)
 {
 	// 검사 로직.
 	for (int i = 0; i < inst_index; i++) {
+
 		if (str[0] == '+')
 			str = &str[1];
+
 		if (strcmp(inst_table[i]->mnemonic, str) == 0)
 			return i;
 	}
@@ -252,8 +269,10 @@ static int assem_pass1(void)
 	 */
 
 	for (token_line = 0; token_line < line_num - 1; token_line++) {
+
 		if (input_data[token_line][0] == '.')
 			continue;
+
 		if (token_parsing(input_data[token_line]))
 			return -1;
 	}
@@ -275,32 +294,37 @@ void make_opcode_output(char* file_name)
 	char file_name_ext[20] = { 0, };
 	sprintf(file_name_ext, "%s.txt", file_name);
 	FILE* file = fopen(file_name_ext, "w");
-
+	int operandsLength = 0;
 	for (int i = 0; i < token_line; i++) {
 		if (token_table[i] != NULL) {
+
 			if (token_table[i]->label != NULL)
-				fprintf(file, "%s\t", token_table[i]->label);
-			else
+				fprintf(file, "%s", token_table[i]->label);
 				fprintf(file, "\t");
 
 			if (token_table[i]->operator != NULL)
-				fprintf(file, "%s\t", token_table[i]->operator);
-			else
+				fprintf(file, "%s", token_table[i]->operator);
 				fprintf(file, "\t");
 
+			char operands[100] = { 0, };					// 이름필드 1개당 최대 31자 사용가능,  MAX_OPERAND == 3 이기때문에 버퍼가 충분하다
 			for (int j = 0; j < 3; j++) {
 				if (token_table[i]->operand[j] != NULL) {
 					if (j > 0)
-						fprintf(file, ", ");
-					fprintf(file, "%s", token_table[i]->operand[j]);
+						strcat(operands, ", ");
+					strcat(operands, token_table[i]->operand[j]);
 				}
 				else
 					break;
 			}
-	
+			fprintf(file, "%s\t", operands);
+
+			if (strlen(operands) < 7 || strchr(operands, '\'') != NULL || strchr(operands, '.') != NULL) // OPcode를 이쁘게 정렬하기 위한 코드
+				fprintf(file, "\t");
+
 			int opIndex = search_opcode(token_table[i]->operator);
 			if (opIndex > 0)
-				fprintf(file, "\t\t%02X", inst_table[opIndex]->opcode);
+				fprintf(file, "%02X", inst_table[opIndex]->opcode);
+
 			fprintf(file, "\n");
 		}
 		else
