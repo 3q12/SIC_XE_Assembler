@@ -184,7 +184,7 @@ int token_parsing(char* str)
 
 	token_table[token_line] = newToken;
 
-	free(input_data[token_line]);
+	free(str);
 
 	return 0;
 }
@@ -195,9 +195,9 @@ int token_parsing(char* str)
  * 주의 : 주어진 문자열이 NULL이거나 구분자를 찾을수 없으면 dest에 NULL값이 저장된다.
  * ----------------------------------------------------------------------------------
  */
-char* tokenizer(char* str, char** dest, char delimeter) {
+char* tokenizer(char* source, char** dest, char delimeter) {
 
-	if (str == NULL) {
+	if (source == NULL) {
 		dest = NULL;
 		return NULL;
 	}
@@ -205,11 +205,11 @@ char* tokenizer(char* str, char** dest, char delimeter) {
 	char buf[100] = { 0, };
 	int i = 0;
 
-	for (i = 0; i < strlen(str); i++) {
-		if (str[i] == delimeter || i == (strlen(str)))
+	for (i = 0; i < strlen(source); i++) {
+		if (source[i] == delimeter || i == (strlen(source)))
 			break;
 
-		buf[i] = str[i];
+		buf[i] = source[i];
 	}
 
 	if (strlen(buf) > 0) {
@@ -221,10 +221,10 @@ char* tokenizer(char* str, char** dest, char delimeter) {
 	else
 		dest = NULL;
 
-	if (i == strlen(str))
+	if (i == strlen(source))
 		return NULL;
 	else
-		return &str[i + 1];
+		return &source[i + 1];
 }
 /* ----------------------------------------------------------------------------------
  * 설명 : 입력 문자열이 기계어 코드인지를 검사하는 함수이다. 
@@ -294,8 +294,6 @@ void make_opcode_output(char* file_name)
 	char file_name_ext[20] = { 0, };
 	sprintf(file_name_ext, "%s.txt", file_name);
 	FILE* file = fopen(file_name_ext, "w");
-	int operandsLength = 0;
-	char* freePtr = 0;
 
 	for (int i = 0; i < token_line; i++) {
 		if (token_table[i] != NULL) {
