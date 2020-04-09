@@ -198,7 +198,7 @@ int token_parsing(char* str)
 char* tokenizer(char* source, char** dest, char delimeter) {
 
 	if (source == NULL) {
-		dest = NULL;
+		*dest = NULL;
 		return NULL;
 	}
 
@@ -206,7 +206,7 @@ char* tokenizer(char* source, char** dest, char delimeter) {
 	int i = 0;
 
 	for (i = 0; i < strlen(source); i++) {
-		if (source[i] == delimeter || i == (strlen(source)))
+		if (source[i] == delimeter)
 			break;
 
 		buf[i] = source[i];
@@ -219,7 +219,7 @@ char* tokenizer(char* source, char** dest, char delimeter) {
 		*dest = token;
 	}
 	else
-		dest = NULL;
+		*dest = NULL;
 
 	if (i == strlen(source))
 		return NULL;
