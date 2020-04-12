@@ -16,7 +16,6 @@ struct inst_unit
     unsigned short format; //  3/4format 일시 0
     unsigned short opcode;
     unsigned short operands;
-    /* add your code here */
 };
 
 // instruction의 정보를 가진 구조체를 관리하는 테이블 생성

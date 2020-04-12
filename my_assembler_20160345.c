@@ -291,9 +291,13 @@ static int assem_pass1(void)
 */
 void make_opcode_output(char* file_name)
 {
-	char file_name_ext[20] = { 0, };
-	sprintf(file_name_ext, "%s.txt", file_name);
-	FILE* file = fopen(file_name_ext, "w");
+
+	FILE* file = stdout;
+	if (file_name != NULL) {
+		char file_name_ext[20] = { 0, };
+		sprintf(file_name_ext, "%s.txt", file_name);
+		file = fopen(file_name_ext, "w");
+	}
 
 	for (int i = 0; i < token_line; i++) {
 		if (token_table[i] != NULL) {
