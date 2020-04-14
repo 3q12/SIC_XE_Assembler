@@ -5,6 +5,7 @@
 #define MAX_INST 256
 #define MAX_LINES 5000
 #define MAX_OPERAND 3
+#define MAX_SECTION 5
 
  /*
   * instruction 목록 파일로 부터 정보를 받아와서 생성하는 구조체 변수이다.
@@ -55,11 +56,11 @@ static int token_line;
 struct symbol_unit
 {
     char symbol[10];
+    short block; // 0 = default  1 = CDATA  2 = CBLKS
     int addr;
 };
 
 typedef struct symbol_unit symbol;
-symbol sym_table[MAX_LINES];
 
 /*
 * 리터럴을 관리하는 구조체이다.
@@ -68,13 +69,34 @@ symbol sym_table[MAX_LINES];
 struct literal_unit
 {
     char literal[10];
+    short block; // 0 = default  1 = CDATA  2 = CBLKS
+    _Bool isConst;
     int addr;
 };
 
 typedef struct literal_unit literal;
-literal literal_table[MAX_LINES];
+/*
+* 섹션을 관리하는 구조체이다.
+* 섹션 테이블은 리터럴테이블, 심볼 테이블,심볼 수, 각 블록별 주소값으로 구성된다.
+*/
+
+struct section_unit {
+    char name[10];
+    literal literal_table[MAX_LINES];
+    int literal_num;
+    symbol sym_table[MAX_LINES];
+    int sym_num;
+    int defaultAddr;
+    int CDATAAddr;
+    int CBLKSAddr;
+};
+
+typedef struct section_unit section;
+section section_table[MAX_SECTION];
+static int section_num;
 
 static int locctr;
+
 //--------------
 
 static char* input_file;

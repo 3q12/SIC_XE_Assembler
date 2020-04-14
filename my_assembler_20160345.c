@@ -44,13 +44,13 @@ int main(int args, char* arg[])
 
 	make_symtab_output("symtab_20160345");
 	make_literaltab_output("literaltab_20160345");
-	if (assem_pass2() < 0)
-	{
-		printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n");
-		return -1;
-	}
+	//if (assem_pass2() < 0)
+	//{
+	//	printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n");
+	//	return -1;
+	//}
 
-	make_objectcode_output("output_20160345");
+	//make_objectcode_output("output_20160345");
 
 	return 0;
 }
@@ -268,7 +268,7 @@ static int assem_pass1(void)
 	 * token_parsing()을 호출하여 token_unit에 저장
 	 */
 
-	for (token_line = 0; token_line < line_num - 1; token_line++) {
+	for (token_line = 0; token_line < line_num ; token_line++) {
 
 		if (input_data[token_line][0] == '.')
 			continue;
@@ -277,6 +277,230 @@ static int assem_pass1(void)
 			return -1;
 	}
 
+	if (literal_scanning()<0)
+		return -1;
+
+	if (symbol_scanning() < 0)
+		return -1;
+	return 0;
+}
+
+int literal_scanning() {
+	section* curSection = &section_table[0];
+	section_num = 0;
+	curSection->defaultAddr = 0;
+	curSection->CDATAAddr = 0;
+	curSection->CBLKSAddr = 0;
+	curSection->sym_num = 0;
+	curSection->literal_num = 0;
+	for (int i = 0; i < token_line; i++) {
+		if (token_table[i] == NULL)
+			continue;
+		if (strcmp(token_table[i]->operator,"CSECT") == 0) {
+			curSection += 1;
+			strcpy(curSection->name, token_table[i]->label);
+			section_num++;
+			continue;
+		}
+		if(token_table[i]->operand[0]!=NULL)
+			if (token_table[i]->operand[0][0] == '=') {
+
+				curSection->literal_table[curSection->literal_num].isConst = 0;
+				char buf[32] = { 0, };
+				sscanf(&token_table[i]->operand[0][3], "%[^']s", buf);
+				_Bool addFlag = 1;
+				for (int j = 0; j < curSection->literal_num+1; j++) {
+					if (strcmp(buf, curSection->literal_table[j].literal) == 0) {
+						addFlag = 0;
+						break;
+					}
+				}
+				if (addFlag) {
+					strcpy(curSection->literal_table[curSection->literal_num].literal, buf);
+					if (token_table[i]->operand[0][1] == 'X') {
+						curSection->literal_table[curSection->literal_num].isConst = 1;
+					}
+					curSection->literal_table[curSection->literal_num].addr = -1;
+					curSection->literal_num += 1;
+				}
+			}
+
+	}
+	return 0;
+}
+
+int symbol_scanning() {
+	section* curSection = &section_table[0];
+	section_num = 0;
+	curSection->defaultAddr = 0;
+	curSection->CDATAAddr = 0;
+	curSection->CBLKSAddr = 0;
+	curSection->sym_num = 0;
+	short blockFlag = 0; // 0 = default  1 = CDATA  2 = CBLKS
+	int start = 0;
+	for (int i = 0; i < token_line; i++)
+		if (strcmp(token_table[i]->operator,"START") == 0) {
+			strcpy(curSection->name, token_table[i]->label);
+			start = i;
+			break;
+		}
+	for (int i = start; i < token_line; i++) {
+		if (token_table[i] == NULL)
+			continue;
+		int inst = search_opcode(token_table[i]->operator);
+		if (inst >= 0) {
+			// symbol 발견시 테이블에 추가
+			if (token_table[i]->label != NULL) {
+				strcpy(curSection->sym_table[curSection->sym_num].symbol, token_table[i]->label);
+				curSection->sym_table[curSection->sym_num].block = 0;
+				curSection->sym_table[curSection->sym_num++].addr = curSection->defaultAddr;
+			}
+			// 주소 증가
+			unsigned short format = inst_table[inst]->format;
+			if (format == 0) {
+				if (token_table[i]->operator[0] == '+')
+					curSection->defaultAddr += 4;
+				else
+					curSection->defaultAddr += 3;
+			}
+			else if (format == 1)
+				curSection->defaultAddr += 1;
+			else if (format == 2)
+				curSection->defaultAddr += 2;
+		}
+		else {
+			if (strcmp(token_table[i]->operator,"LTORG") == 0) {
+				for (int j = 0; j < curSection->literal_num; j++) {
+					curSection->literal_table[j].block = blockFlag;
+
+					if (curSection->literal_table[j].isConst) {
+						if (blockFlag == 0) {
+							curSection->literal_table[j].addr = curSection->defaultAddr;
+							curSection->defaultAddr += strlen(curSection->literal_table[j].literal) / 2;
+						}
+						else if (blockFlag == 1) {
+							curSection->literal_table[j].addr = curSection->CDATAAddr;
+							curSection->CDATAAddr += strlen(curSection->literal_table[j].literal) / 2;
+						}
+						else {
+							curSection->literal_table[j].addr = curSection->CBLKSAddr;
+							curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal) / 2;
+						}
+					}
+					else {
+						if (blockFlag == 0) {
+							curSection->literal_table[j].addr = curSection->defaultAddr;
+							curSection->defaultAddr += strlen(curSection->literal_table[j].literal);
+						}
+						else if (blockFlag == 1) {
+							curSection->literal_table[j].addr = curSection->CDATAAddr;
+							curSection->CDATAAddr += strlen(curSection->literal_table[j].literal);
+						}
+						else {
+							curSection->literal_table[j].addr = curSection->CBLKSAddr;
+							curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal);
+						}
+					}
+				}
+			}
+
+			if (strcmp(token_table[i]->operator,"CSECT") == 0) {
+				curSection += 1;
+				strcpy(curSection->name, token_table[i]->label);
+				section_num++;
+			}
+			if (strcmp(token_table[i]->operator,"USE") == 0) {
+				if (strcmp(token_table[i]->operand[0], "CDATA") == 0)
+					blockFlag = 1;
+				else if (strcmp(token_table[i]->operand[0], "CBLKS") == 0)
+					blockFlag = 2;
+				else
+					blockFlag = 0;
+				continue;
+			}
+			if (token_table[i]->label != NULL) {
+				strcpy(curSection->sym_table[curSection->sym_num].symbol, token_table[i]->label);
+				curSection->sym_table[curSection->sym_num].block = blockFlag;
+				if (blockFlag == 0)
+					curSection->sym_table[curSection->sym_num].addr = curSection->defaultAddr;
+				else if (blockFlag == 1)
+					curSection->sym_table[curSection->sym_num].addr = curSection->CDATAAddr;
+				else
+					curSection->sym_table[curSection->sym_num].addr = curSection->CBLKSAddr;
+				curSection->sym_table[curSection->sym_num++].addr = curSection->defaultAddr;
+			}
+			if (strcmp(token_table[i]->operator,"BYTE") == 0) {
+				if (blockFlag == 0)
+					curSection->defaultAddr += 1;
+				else if (blockFlag == 1)
+					curSection->CDATAAddr += 1;
+				else
+					curSection->CBLKSAddr += 1;
+			}
+			else if (strcmp(token_table[i]->operator,"WORD") == 0) {
+				if (blockFlag == 0)
+					curSection->defaultAddr += 3;
+				else if (blockFlag == 1)
+					curSection->CDATAAddr += 3;
+				else
+					curSection->CBLKSAddr += 3;
+			}
+			else if (strcmp(token_table[i]->operator,"RESW") == 0) {
+				if (blockFlag == 0)
+					curSection->defaultAddr += 3 * atoi(token_table[i]->operand[0]);
+				else if (blockFlag == 1)
+					curSection->CDATAAddr += 3 * atoi(token_table[i]->operand[0]);
+				else
+					curSection->CBLKSAddr += 3 * atoi(token_table[i]->operand[0]);
+			}
+			else if (strcmp(token_table[i]->operator,"RESB") == 0) {
+				if (blockFlag == 0)
+					curSection->defaultAddr += atoi(token_table[i]->operand[0]);
+				else if (blockFlag == 1)
+					curSection->CDATAAddr += atoi(token_table[i]->operand[0]);
+				else
+					curSection->CBLKSAddr += atoi(token_table[i]->operand[0]);
+			}
+			else if (strcmp(token_table[i]->operator,"END") == 0) {
+				for (int j = 0; j < curSection->literal_num ; j++) {
+					if (curSection->literal_table[j].addr == -1) {
+
+						curSection->literal_table[j].block = blockFlag;
+
+						if (curSection->literal_table[j].isConst) {
+							if (blockFlag == 0) {
+								curSection->literal_table[j].addr = curSection->defaultAddr;
+								curSection->defaultAddr += strlen(curSection->literal_table[j].literal) / 2;
+							}
+							else if (blockFlag == 1) {
+								curSection->literal_table[j].addr = curSection->CDATAAddr;
+								curSection->CDATAAddr += strlen(curSection->literal_table[j].literal) / 2;
+							}
+							else {
+								curSection->literal_table[j].addr = curSection->CBLKSAddr;
+								curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal) / 2;
+							}
+						}
+						else {
+							if (blockFlag == 0) {
+								curSection->literal_table[j].addr = curSection->defaultAddr;
+								curSection->defaultAddr += strlen(curSection->literal_table[j].literal);
+							}
+							else if (blockFlag == 1) {
+								curSection->literal_table[j].addr = curSection->CDATAAddr;
+								curSection->CDATAAddr += strlen(curSection->literal_table[j].literal);
+							}
+							else {
+								curSection->literal_table[j].addr = curSection->CBLKSAddr;
+								curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 /* ----------------------------------------------------------------------------------
@@ -355,7 +579,18 @@ void make_opcode_output(char* file_name)
 */
 void make_symtab_output(char* file_name)
 {
-	/* add your code here */
+	section* curSection = &section_table[0];
+	for (int i = 0; i < section_num +1; i++){
+		curSection =& section_table[i];
+		for (int j = 0; j < curSection->sym_num; j++) {
+			int addr = 0;
+			if (curSection->sym_table[j].block == 1)
+				addr = curSection->defaultAddr + curSection->sym_table[j].addr;
+			printf("%-30s%X\n", curSection->sym_table[j].symbol, curSection->sym_table[j].addr);
+		}
+		printf("\n");
+	}
+
 }
 
 /* ----------------------------------------------------------------------------------
@@ -370,7 +605,14 @@ void make_symtab_output(char* file_name)
 */
 void make_literaltab_output(char* filen_ame)
 {
-	/* add your code here */
+	section* curSection = &section_table[0];
+	for (int i = 0; i < section_num + 1; i++) {
+		curSection = &section_table[i];
+		for (int j = 0; j < curSection->literal_num; j++) {
+			printf("%-30s%X\n", curSection->literal_table[j].literal, curSection->literal_table[j].addr);
+		}
+		printf("\n");
+	}
 }
 
 /* ----------------------------------------------------------------------------------
