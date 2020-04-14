@@ -1,7 +1,8 @@
 /*
- * 화일명 : my_assembler_20160345.c 
+ * 화일명 : my_assembler_20160345.c
  * 설  명 : 이 프로그램은 SIC/XE 머신을 위한 간단한 Assembler 프로그램의 메인루틴으로,
  * 입력된 파일의 코드 중, 명령어에 해당하는 OPCODE를 찾아 출력한다.
+ * 파일 내에서 사용되는 문자열 "20160345"에는 자신의 학번을 기입한다.
  */
 
 /*
@@ -15,18 +16,18 @@
 #include <string.h>
 #include <fcntl.h>
 
-// 파일명의 "00000000"은 자신의 학번으로 변경할 것.
+// 파일명의 "20160345"은 자신의 학번으로 변경할 것.
 #include "my_assembler_20160345.h"
 
 /* ----------------------------------------------------------------------------------
  * 설명 : 사용자로 부터 어셈블리 파일을 받아서 명령어의 OPCODE를 찾아 출력한다.
- * 매계 : 실행 파일, 어셈블리 파일 
- * 반환 : 성공 = 0, 실패 = < 0 
- * 주의 : 현재 어셈블리 프로그램의 리스트 파일을 생성하는 루틴은 만들지 않았다. 
- *		   또한 중간파일을 생성하지 않는다. 
+ * 매계 : 실행 파일, 어셈블리 파일
+ * 반환 : 성공 = 0, 실패 = < 0
+ * 주의 : 현재 어셈블리 프로그램의 리스트 파일을 생성하는 루틴은 만들지 않았다.
+ *		   또한 중간파일을 생성하지 않는다.
  * ----------------------------------------------------------------------------------
  */
-int main(int args, char *arg[])
+int main(int args, char* arg[])
 {
 	if (init_my_assembler() < 0)
 	{
@@ -39,19 +40,18 @@ int main(int args, char *arg[])
 		printf("assem_pass1: 패스1 과정에서 실패하였습니다.  \n");
 		return -1;
 	}
-	make_opcode_output("output_20160345");
+	// make_opcode_output("output_20160345");
 
-	/*
-	* 추후 프로젝트에서 사용되는 부분
-	
 	make_symtab_output("symtab_20160345");
-	if(assem_pass2() < 0 ){
-		printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n") ; 
-		return -1 ; 
+	make_literaltab_output("literaltab_20160345");
+	if (assem_pass2() < 0)
+	{
+		printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n");
+		return -1;
 	}
 
-	make_objectcode_output("output_20160345") ; 
-	*/
+	make_objectcode_output("output_20160345");
+
 	return 0;
 }
 
@@ -291,57 +291,56 @@ static int assem_pass1(void)
 */
 void make_opcode_output(char* file_name)
 {
+	//FILE* file = stdout;
+	//if (file_name != NULL) {
+	//	char file_name_ext[20] = { 0, };
+	//	sprintf(file_name_ext, "%s.txt", file_name);
+	//	file = fopen(file_name_ext, "w");
+	//}
 
-	FILE* file = stdout;
-	if (file_name != NULL) {
-		char file_name_ext[20] = { 0, };
-		sprintf(file_name_ext, "%s.txt", file_name);
-		file = fopen(file_name_ext, "w");
-	}
+	//for (int i = 0; i < token_line; i++) {
+	//	if (token_table[i] != NULL) {
 
-	for (int i = 0; i < token_line; i++) {
-		if (token_table[i] != NULL) {
+	//		if (token_table[i]->label != NULL)
+	//			fprintf(file, "%s", token_table[i]->label);
+	//		fprintf(file, "\t");
 
-			if (token_table[i]->label != NULL)
-				fprintf(file, "%s", token_table[i]->label);
-			fprintf(file, "\t");
+	//		if (token_table[i]->operator != NULL)
+	//			fprintf(file, "%s", token_table[i]->operator);
+	//		fprintf(file, "\t");
 
-			if (token_table[i]->operator != NULL)
-				fprintf(file, "%s", token_table[i]->operator);
-			fprintf(file, "\t");
-
-			char operands[100] = { 0, };					// 이름필드 1개당 최대 31자 사용가능,  MAX_OPERAND == 3 이기때문에 버퍼가 충분하다
-			for (int j = 0; j < 3; j++) {
-				if (token_table[i]->operand[j] != NULL) {
-					if (j > 0)
-						strcat(operands, ", ");
-					strcat(operands, token_table[i]->operand[j]);
-					free((token_table[i]->operand[j]));
-				}
-				else
-					break;
-			}
-			fprintf(file, "%s\t", operands);
+	//		char operands[100] = { 0, };					// 이름필드 1개당 최대 31자 사용가능,  MAX_OPERAND == 3 이기때문에 버퍼가 충분하다
+	//		for (int j = 0; j < 3; j++) {
+	//			if (token_table[i]->operand[j] != NULL) {
+	//				if (j > 0)
+	//					strcat(operands, ", ");
+	//				strcat(operands, token_table[i]->operand[j]);
+	//				free((token_table[i]->operand[j]));
+	//			}
+	//			else
+	//				break;
+	//		}
+	//		fprintf(file, "%s\t", operands);
 
 
-			if (strlen(operands) < 7 || strchr(operands, '\'') != NULL || strchr(operands, '.') != NULL) // OPcode를 이쁘게 정렬하기 위한 코드
-				fprintf(file, "\t");
+	//		if (strlen(operands) < 7 || strchr(operands, '\'') != NULL || strchr(operands, '.') != NULL) // OPcode를 이쁘게 정렬하기 위한 코드
+	//			fprintf(file, "\t");
 
-			int opIndex = search_opcode(token_table[i]->operator);
-			if (opIndex > 0)
-				fprintf(file, "\t%02X", inst_table[opIndex]->opcode);
+	//		int opIndex = search_opcode(token_table[i]->operator);
+	//		if (opIndex > 0)
+	//			fprintf(file, "\t%02X", inst_table[opIndex]->opcode);
 
-			fprintf(file, "\n");
-			free(&token_table[i]->label[0]);
-			free(&token_table[i]->operator[0]);
-			free(&token_table[i]->comment[0]);
-			free(token_table[i]);
-		}
-		else {
-			fprintf(file, "%s\n", input_data[i]);
-			free(input_data[i]);
-		}
-	}
+	//		fprintf(file, "\n");
+	//		free(&token_table[i]->label[0]);
+	//		free(&token_table[i]->operator[0]);
+	//		free(&token_table[i]->comment[0]);
+	//		free(token_table[i]);
+	//	}
+	//	else {
+	//		fprintf(file, "%s\n", input_data[i]);
+	//		free(input_data[i]);
+	//	}
+	//}
 }
 
 /* ----------------------------------------------------------------------------------
@@ -354,7 +353,7 @@ void make_opcode_output(char* file_name)
 *
 * -----------------------------------------------------------------------------------
 */
-void make_symtab_output(char *file_name)
+void make_symtab_output(char* file_name)
 {
 	/* add your code here */
 }
@@ -369,14 +368,10 @@ void make_symtab_output(char *file_name)
 *
 * -----------------------------------------------------------------------------------
 */
-void make_literaltab_output(char *filen_ame)
+void make_literaltab_output(char* filen_ame)
 {
 	/* add your code here */
 }
-
-/* --------------------------------------------------------------------------------*
-* ------------------------- 추후 프로젝트에서 사용할 함수 --------------------------*
-* --------------------------------------------------------------------------------*/
 
 /* ----------------------------------------------------------------------------------
 * 설명 : 어셈블리 코드를 기계어 코드로 바꾸기 위한 패스2 과정을 수행하는 함수이다.
@@ -404,7 +399,7 @@ static int assem_pass2(void)
 *
 * -----------------------------------------------------------------------------------
 */
-void make_objectcode_output(char *file_name)
+void make_objectcode_output(char* file_name)
 {
 	/* add your code here */
 }
