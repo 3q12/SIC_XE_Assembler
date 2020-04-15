@@ -43,7 +43,6 @@ struct token_unit
     char* operand[MAX_OPERAND]; //명령어 라인 중 operand
     char* comment;              //명령어 라인 중 comment
     char nixbpe;                // 하위 6bit 사용 : _ _ n i x b p e
-    unsigned int object_code;  // 명령어 라인의 object_code
 };
 
 typedef struct token_unit token;
@@ -59,6 +58,7 @@ struct symbol_unit
     char symbol[10];
     short block; // 0 = default  1 = CDATA  2 = CBLKS 3 = EQU
     int addr;
+    _Bool isBase;
 };
 
 typedef struct symbol_unit symbol;
@@ -112,7 +112,7 @@ int update_literal_addr(section* curSection, short blockFlag);
 int search_literal(section curSection, char* str);
 int symbol_parsing(section* curSection, token* Token, short *blockFlag);
 section* init_section(int section_num);
-int add_symbol(section* curSection, short blockFlag, char* label);
+int add_symbol(section* curSection, short blockFlag, char* label,_Bool isBase);
 int search_symbol(section curSection, char* str);
 void make_opcode_output(char* file_name);
 
