@@ -5,18 +5,18 @@
  * 파일 내에서 사용되는 문자열 "20160345"에는 자신의 학번을 기입한다.
  */
 
-/*
- *
- * 프로그램의 헤더를 정의한다. 
- *
- */
+ /*
+  *
+  * 프로그램의 헤더를 정의한다.
+  *
+  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 
-// 파일명의 "20160345"은 자신의 학번으로 변경할 것.
+  // 파일명의 "20160345"은 자신의 학번으로 변경할 것.
 #include "my_assembler_20160345.h"
 
 /* ----------------------------------------------------------------------------------
@@ -56,12 +56,12 @@ int main(int args, char* arg[])
 }
 
 /* ----------------------------------------------------------------------------------
- * 설명 : 프로그램 초기화를 위한 자료구조 생성 및 파일을 읽는 함수이다. 
+ * 설명 : 프로그램 초기화를 위한 자료구조 생성 및 파일을 읽는 함수이다.
  * 매계 : 없음
  * 반환 : 정상종료 = 0 , 에러 발생 = -1
- * 주의 : 각각의 명령어 테이블을 내부에 선언하지 않고 관리를 용이하게 하기 
+ * 주의 : 각각의 명령어 테이블을 내부에 선언하지 않고 관리를 용이하게 하기
  *		   위해서 파일 단위로 관리하여 프로그램 초기화를 통해 정보를 읽어 올 수 있도록
- *		   구현하였다. 
+ *		   구현하였다.
  * ----------------------------------------------------------------------------------
  */
 int init_my_assembler(void)
@@ -76,16 +76,16 @@ int init_my_assembler(void)
 }
 
 /* ----------------------------------------------------------------------------------
- * 설명 : 머신을 위한 기계 코드목록 파일을 읽어 기계어 목록 테이블(inst_table)을 
- *        생성하는 함수이다. 
+ * 설명 : 머신을 위한 기계 코드목록 파일을 읽어 기계어 목록 테이블(inst_table)을
+ *        생성하는 함수이다.
  * 매계 : 기계어 목록 파일
- * 반환 : 정상종료 = 0 , 에러 < 0 
+ * 반환 : 정상종료 = 0 , 에러 < 0
  * 주의 : 기계어 목록파일 형식은 자유롭게 구현한다. 예시는 다음과 같다.
- *	
+ *
  *	===============================================================================
  *		   | 이름 | 형식 | 기계어 코드 | 오퍼랜드의 갯수 |
- *	===============================================================================	   
- *          형식 : 0 = format 3/4  1 = format1	2 = format2	
+ *	===============================================================================
+ *          형식 : 0 = format 3/4  1 = format1	2 = format2
  * ----------------------------------------------------------------------------------
  */
 int init_inst_file(char* inst_file)
@@ -113,11 +113,11 @@ int init_inst_file(char* inst_file)
 }
 
 /* ----------------------------------------------------------------------------------
- * 설명 : 어셈블리 할 소스코드를 읽어 소스코드 테이블(input_data)를 생성하는 함수이다. 
+ * 설명 : 어셈블리 할 소스코드를 읽어 소스코드 테이블(input_data)를 생성하는 함수이다.
  * 매계 : 어셈블리할 소스파일명
- * 반환 : 정상종료 = 0 , 에러 < 0  
+ * 반환 : 정상종료 = 0 , 에러 < 0
  * 주의 : 라인단위로 저장한다.
- *		
+ *
  * ----------------------------------------------------------------------------------
  */
 int init_input_file(char* input_file)
@@ -146,11 +146,11 @@ int init_input_file(char* input_file)
 }
 
 /* ----------------------------------------------------------------------------------
- * 설명 : 소스 코드를 읽어와 토큰단위로 분석하고 토큰 테이블을 작성하는 함수이다. 
- *        패스 1로 부터 호출된다. 
- * 매계 : 파싱을 원하는 문자열  
- * 반환 : 정상종료 = 0 , 에러 < 0 
- * 주의 : my_assembler 프로그램에서는 라인단위로 토큰 및 오브젝트 관리를 하고 있다. 
+ * 설명 : 소스 코드를 읽어와 토큰단위로 분석하고 토큰 테이블을 작성하는 함수이다.
+ *        패스 1로 부터 호출된다.
+ * 매계 : 파싱을 원하는 문자열
+ * 반환 : 정상종료 = 0 , 에러 < 0
+ * 주의 : my_assembler 프로그램에서는 라인단위로 토큰 및 오브젝트 관리를 하고 있다.
  * ----------------------------------------------------------------------------------
  */
 int token_parsing(char* str)
@@ -174,7 +174,7 @@ int token_parsing(char* str)
 		for (int i = 0;; i++) {
 			if (operandBuf == NULL)
 				break;
-			char* newOperand = calloc(strlen(operandBuf)+1, sizeof(char));
+			char* newOperand = calloc(strlen(operandBuf) + 1, sizeof(char));
 			strcpy(newOperand, operandBuf);
 			newToken->operand[i] = newOperand;
 
@@ -213,7 +213,7 @@ char* tokenizer(char* source, char** dest, char delimeter) {
 	}
 
 	if (strlen(buf) > 0) {
-		char* token = (char*)calloc(strlen(buf)+1, sizeof(char));
+		char* token = (char*)calloc(strlen(buf) + 1, sizeof(char));
 
 		strcpy(token, buf);
 		*dest = token;
@@ -227,11 +227,11 @@ char* tokenizer(char* source, char** dest, char delimeter) {
 		return &source[i + 1];
 }
 /* ----------------------------------------------------------------------------------
- * 설명 : 입력 문자열이 기계어 코드인지를 검사하는 함수이다. 
- * 매계 : 토큰 단위로 구분된 문자열 
- * 반환 : 정상종료 = 기계어 테이블 인덱스, 에러 < 0 
- * 주의 : 
- *		
+ * 설명 : 입력 문자열이 기계어 코드인지를 검사하는 함수이다.
+ * 매계 : 토큰 단위로 구분된 문자열
+ * 반환 : 정상종료 = 기계어 테이블 인덱스, 에러 < 0
+ * 주의 :
+ *
  * ----------------------------------------------------------------------------------
  */
 int search_opcode(char* str)
@@ -263,246 +263,208 @@ int search_opcode(char* str)
 */
 static int assem_pass1(void)
 {
-	/* 
+	/*
 	 * input_data의 문자열을 한줄씩 입력 받아서
 	 * token_parsing()을 호출하여 token_unit에 저장
+	 * literal_parsing()을 호출하여 각 섹션 literal_table에 저장
+	 * symbol_parsing()을 호출하여 각 섹션 sym_table에 저장
 	 */
 
-	for (token_line = 0; token_line < line_num ; token_line++) {
+	section_num = 0;
+	section* curSection = init_section(section_num);
+	short blockFlag = 0; // 0 = default  1 = CDATA  2 = CBLKS
+
+	for (token_line = 0; token_line < line_num; token_line++) {
 
 		if (input_data[token_line][0] == '.')
 			continue;
-
 		if (token_parsing(input_data[token_line]))
 			return -1;
+		if (literal_parsing(&curSection, token_table[token_line]) < 0)
+			return -1;
+		if (symbol_parsing(curSection, token_table[token_line],&blockFlag) < 0)
+			return -1;
 	}
-
-	if (literal_scanning()<0)
-		return -1;
-
-	if (symbol_scanning() < 0)
-		return -1;
 	return 0;
 }
 
-int literal_scanning() {
-	section* curSection = &section_table[0];
-	section_num = 0;
-	curSection->defaultAddr = 0;
-	curSection->CDATAAddr = 0;
-	curSection->CBLKSAddr = 0;
+/* ----------------------------------------------------------------------------------
+ * 설명 : 섹션을 초기화하는 함수이다.
+ * 매계 : 색션 번호
+ * 반환 : 초기화된 섹션의 주소
+ * 주의 :
+ *
+ * ----------------------------------------------------------------------------------
+ */
+section* init_section(int section_num) {
+	section* curSection = &section_table[section_num];
+	curSection->addr[0] = 0;
+	curSection->addr[1] = 0;
+	curSection->addr[2] = 0;
 	curSection->sym_num = 0;
 	curSection->literal_num = 0;
-	for (int i = 0; i < token_line; i++) {
-		if (token_table[i] == NULL)
-			continue;
-		if (strcmp(token_table[i]->operator,"CSECT") == 0) {
-			curSection += 1;
-			strcpy(curSection->name, token_table[i]->label);
-			section_num++;
-			continue;
-		}
-		if(token_table[i]->operand[0]!=NULL)
-			if (token_table[i]->operand[0][0] == '=') {
-
-				curSection->literal_table[curSection->literal_num].isConst = 0;
-				char buf[32] = { 0, };
-				sscanf(&token_table[i]->operand[0][3], "%[^']s", buf);
-				_Bool addFlag = 1;
-				for (int j = 0; j < curSection->literal_num+1; j++) {
-					if (strcmp(buf, curSection->literal_table[j].literal) == 0) {
-						addFlag = 0;
-						break;
-					}
-				}
-				if (addFlag) {
-					strcpy(curSection->literal_table[curSection->literal_num].literal, buf);
-					if (token_table[i]->operand[0][1] == 'X') {
-						curSection->literal_table[curSection->literal_num].isConst = 1;
-					}
-					curSection->literal_table[curSection->literal_num].addr = -1;
-					curSection->literal_num += 1;
-				}
-			}
-
-	}
-	return 0;
+	return curSection;
 }
 
-int symbol_scanning() {
-	section* curSection = &section_table[0];
-	section_num = 0;
-	curSection->defaultAddr = 0;
-	curSection->CDATAAddr = 0;
-	curSection->CBLKSAddr = 0;
-	curSection->sym_num = 0;
-	short blockFlag = 0; // 0 = default  1 = CDATA  2 = CBLKS
-	int start = 0;
-	for (int i = 0; i < token_line; i++)
-		if (strcmp(token_table[i]->operator,"START") == 0) {
-			strcpy(curSection->name, token_table[i]->label);
-			start = i;
-			break;
-		}
-	for (int i = start; i < token_line; i++) {
-		if (token_table[i] == NULL)
-			continue;
-		int inst = search_opcode(token_table[i]->operator);
-		if (inst >= 0) {
-			// symbol 발견시 테이블에 추가
-			if (token_table[i]->label != NULL) {
-				strcpy(curSection->sym_table[curSection->sym_num].symbol, token_table[i]->label);
-				curSection->sym_table[curSection->sym_num].block = 0;
-				curSection->sym_table[curSection->sym_num++].addr = curSection->defaultAddr;
-			}
-			// 주소 증가
-			unsigned short format = inst_table[inst]->format;
-			if (format == 0) {
-				if (token_table[i]->operator[0] == '+')
-					curSection->defaultAddr += 4;
-				else
-					curSection->defaultAddr += 3;
-			}
-			else if (format == 1)
-				curSection->defaultAddr += 1;
-			else if (format == 2)
-				curSection->defaultAddr += 2;
-		}
-		else {
-			if (strcmp(token_table[i]->operator,"LTORG") == 0) {
-				for (int j = 0; j < curSection->literal_num; j++) {
-					curSection->literal_table[j].block = blockFlag;
+/* ----------------------------------------------------------------------------------
+ * 설명 : 토큰을 분석하여 리터럴 테이블을 작성하는 함수이다.
+ *        패스 1로 부터 호출된다.
+ * 매계 : 현재 섹션 주소, 토큰
+ * 반환 : 정상종료 = 0 , 에러 < 0
+ * 주의 : my_assembler 프로그램에서는 라인단위로 토큰 및 오브젝트 관리를 하고 있다.
+ * ----------------------------------------------------------------------------------
+ */
+int literal_parsing(section** curSection, token* Token) {
+	section* section = *curSection;
+	if (strcmp(Token->operator,"CSECT") == 0) {
+		*curSection = *curSection + 1;
+		section = *curSection;
+		section->literal_num = 0;
+		strcpy(section->name, Token->label);
+		section_num++;
+		return 0;
+	}
 
-					if (curSection->literal_table[j].isConst) {
-						if (blockFlag == 0) {
-							curSection->literal_table[j].addr = curSection->defaultAddr;
-							curSection->defaultAddr += strlen(curSection->literal_table[j].literal) / 2;
-						}
-						else if (blockFlag == 1) {
-							curSection->literal_table[j].addr = curSection->CDATAAddr;
-							curSection->CDATAAddr += strlen(curSection->literal_table[j].literal) / 2;
-						}
-						else {
-							curSection->literal_table[j].addr = curSection->CBLKSAddr;
-							curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal) / 2;
-						}
-					}
-					else {
-						if (blockFlag == 0) {
-							curSection->literal_table[j].addr = curSection->defaultAddr;
-							curSection->defaultAddr += strlen(curSection->literal_table[j].literal);
-						}
-						else if (blockFlag == 1) {
-							curSection->literal_table[j].addr = curSection->CDATAAddr;
-							curSection->CDATAAddr += strlen(curSection->literal_table[j].literal);
-						}
-						else {
-							curSection->literal_table[j].addr = curSection->CBLKSAddr;
-							curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal);
-						}
-					}
-				}
+	if (Token->operand[0] == NULL)
+		return 0;
+
+	if (Token->operand[0][0] == '=') {
+		char buf[32] = { 0, };
+		sscanf(&Token->operand[0][3], "%[^']s", buf);
+
+		_Bool addFlag = 1;
+		for (int j = 0; j < section->literal_num; j++)
+			if (strcmp(buf, section->literal_table[j].literal) == 0) {
+				addFlag = 0;
+				break;
 			}
 
-			if (strcmp(token_table[i]->operator,"CSECT") == 0) {
-				curSection += 1;
-				strcpy(curSection->name, token_table[i]->label);
-				section_num++;
-			}
-			if (strcmp(token_table[i]->operator,"USE") == 0) {
-				if (strcmp(token_table[i]->operand[0], "CDATA") == 0)
-					blockFlag = 1;
-				else if (strcmp(token_table[i]->operand[0], "CBLKS") == 0)
-					blockFlag = 2;
-				else
-					blockFlag = 0;
-				continue;
-			}
-			if (token_table[i]->label != NULL) {
-				strcpy(curSection->sym_table[curSection->sym_num].symbol, token_table[i]->label);
-				curSection->sym_table[curSection->sym_num].block = blockFlag;
-				if (blockFlag == 0)
-					curSection->sym_table[curSection->sym_num].addr = curSection->defaultAddr;
-				else if (blockFlag == 1)
-					curSection->sym_table[curSection->sym_num].addr = curSection->CDATAAddr;
-				else
-					curSection->sym_table[curSection->sym_num].addr = curSection->CBLKSAddr;
-				curSection->sym_table[curSection->sym_num++].addr = curSection->defaultAddr;
-			}
-			if (strcmp(token_table[i]->operator,"BYTE") == 0) {
-				if (blockFlag == 0)
-					curSection->defaultAddr += 1;
-				else if (blockFlag == 1)
-					curSection->CDATAAddr += 1;
-				else
-					curSection->CBLKSAddr += 1;
-			}
-			else if (strcmp(token_table[i]->operator,"WORD") == 0) {
-				if (blockFlag == 0)
-					curSection->defaultAddr += 3;
-				else if (blockFlag == 1)
-					curSection->CDATAAddr += 3;
-				else
-					curSection->CBLKSAddr += 3;
-			}
-			else if (strcmp(token_table[i]->operator,"RESW") == 0) {
-				if (blockFlag == 0)
-					curSection->defaultAddr += 3 * atoi(token_table[i]->operand[0]);
-				else if (blockFlag == 1)
-					curSection->CDATAAddr += 3 * atoi(token_table[i]->operand[0]);
-				else
-					curSection->CBLKSAddr += 3 * atoi(token_table[i]->operand[0]);
-			}
-			else if (strcmp(token_table[i]->operator,"RESB") == 0) {
-				if (blockFlag == 0)
-					curSection->defaultAddr += atoi(token_table[i]->operand[0]);
-				else if (blockFlag == 1)
-					curSection->CDATAAddr += atoi(token_table[i]->operand[0]);
-				else
-					curSection->CBLKSAddr += atoi(token_table[i]->operand[0]);
-			}
-			else if (strcmp(token_table[i]->operator,"END") == 0) {
-				for (int j = 0; j < curSection->literal_num ; j++) {
-					if (curSection->literal_table[j].addr == -1) {
-
-						curSection->literal_table[j].block = blockFlag;
-
-						if (curSection->literal_table[j].isConst) {
-							if (blockFlag == 0) {
-								curSection->literal_table[j].addr = curSection->defaultAddr;
-								curSection->defaultAddr += strlen(curSection->literal_table[j].literal) / 2;
-							}
-							else if (blockFlag == 1) {
-								curSection->literal_table[j].addr = curSection->CDATAAddr;
-								curSection->CDATAAddr += strlen(curSection->literal_table[j].literal) / 2;
-							}
-							else {
-								curSection->literal_table[j].addr = curSection->CBLKSAddr;
-								curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal) / 2;
-							}
-						}
-						else {
-							if (blockFlag == 0) {
-								curSection->literal_table[j].addr = curSection->defaultAddr;
-								curSection->defaultAddr += strlen(curSection->literal_table[j].literal);
-							}
-							else if (blockFlag == 1) {
-								curSection->literal_table[j].addr = curSection->CDATAAddr;
-								curSection->CDATAAddr += strlen(curSection->literal_table[j].literal);
-							}
-							else {
-								curSection->literal_table[j].addr = curSection->CBLKSAddr;
-								curSection->CBLKSAddr += strlen(curSection->literal_table[j].literal);
-							}
-						}
-					}
-				}
-			}
+		if (addFlag) {
+			if (Token->operand[0][1] == 'X')
+				section->literal_table[section->literal_num].isConst = 1;
+			else
+				section->literal_table[section->literal_num].isConst = 0;
+			strcpy(section->literal_table[section->literal_num].literal, buf);
+			section->literal_table[section->literal_num++].addr = -1;
 		}
 	}
 	return 0;
 }
 
+/* ----------------------------------------------------------------------------------
+ * 설명 : 심볼테이블 작성중 리터럴의 주소값을 갱신하는 함수이다.
+ *        심볼파싱 으로 부터 호출된다.
+ * 매계 : 현재 섹션 주소, 토큰, 블록상태
+ * 반환 : 정상종료 = 0 , 에러 < 0
+ * 주의 :
+ * ----------------------------------------------------------------------------------
+ */
+int update_literal_addr(section* curSection, short blockFlag) {
+	for (int i = 0; i < curSection->literal_num; i++) {
+		if (curSection->literal_table[i].addr > 0)
+			continue;
+		curSection->literal_table[i].block = blockFlag;
+		curSection->literal_table[i].addr = curSection->addr[blockFlag];
+
+		if (curSection->literal_table[i].isConst)
+			curSection->addr[blockFlag] += strlen(curSection->literal_table[i].literal) / 2;
+		else
+			curSection->addr[blockFlag] += strlen(curSection->literal_table[i].literal);
+	}
+	return 0;
+}
+
+/* ----------------------------------------------------------------------------------
+ * 설명 : 토큰을 분석하여 심볼 테이블을 작성하는 함수이다.
+ *        패스 1로 부터 호출된다.
+ * 매계 : 현재 섹션 주소, 토큰, 블록상태
+ * 반환 : 정상종료 = 0 , 에러 < 0
+ * 주의 : my_assembler 프로그램에서는 라인단위로 토큰 및 오브젝트 관리를 하고 있다.
+ * ----------------------------------------------------------------------------------
+ */
+int symbol_parsing(section* curSection, token* Token, short *blockFlag) {
+	if(strlen(curSection->name) ==0)
+		strcpy(curSection->name, Token->label);
+
+	int inst = search_opcode(Token->operator);
+	if (inst >= 0) {
+		// symbol 발견시 테이블에 추가
+		if (Token->label != NULL)
+			add_symbol(curSection, *blockFlag, Token->label);
+		// 주소 증가
+		unsigned short format = inst_table[inst]->format;
+		if (format == 0)
+			if (Token->operator[0] == '+')
+				curSection->addr[0] += 4;
+			else
+				curSection->addr[0] += 3;
+		else if (format == 1)
+			curSection->addr[0] += 1;
+		else if (format == 2)
+			curSection->addr[0] += 2;
+	}
+	else {
+		// 섹션 감지
+		if (strcmp(Token->operator,"CSECT") == 0) {
+			strcpy(curSection->name, Token->label);
+			add_symbol(curSection, *blockFlag, Token->label);
+			return 0;;
+		}
+		// 블록 감지
+		if (strcmp(Token->operator,"USE") == 0) {
+			if (Token->operand[0] == NULL)
+				*blockFlag = 0;
+			else if (strcmp(Token->operand[0], "CDATA") == 0)
+				*blockFlag = 1;
+			else if (strcmp(Token->operand[0], "CBLKS") == 0)
+				*blockFlag = 2;
+			return 0;
+		}
+		// symbol 테이블에 추가
+		if (Token->label != NULL)
+			if (strcmp(Token->operator,"EQU") == 0)
+				add_symbol(curSection, 3, Token->label);
+			else
+				add_symbol(curSection, *blockFlag, Token->label);
+		// 리터널 테이블 주소 업데이트, 주소증가
+		if (strcmp(Token->operator,"LTORG") == 0 || strcmp(Token->operator,"END") == 0) {
+			update_literal_addr(curSection, *blockFlag);
+			return 0;
+		}
+		// 주소증가
+		if (strcmp(Token->operator,"BYTE") == 0)
+			curSection->addr[*blockFlag] += 1;
+		else if (strcmp(Token->operator,"WORD") == 0)
+			curSection->addr[*blockFlag] += 3;
+		else if (strcmp(Token->operator,"RESW") == 0)
+			curSection->addr[*blockFlag] += 3 * atoi(Token->operand[0]);
+		else if (strcmp(Token->operator,"RESB") == 0)
+			curSection->addr[*blockFlag] += atoi(Token->operand[0]);
+	}
+	return 0;
+}
+
+
+/* ----------------------------------------------------------------------------------
+ * 설명 : 심볼 테이블에 심볼을 추가하는 함수이다.
+ *        패스 1로 부터 호출된다.
+ * 매계 : 현재 섹션 주소,  블록상태, 라벨
+ * 반환 : 정상종료 = 0 , 에러 < 0
+ * 주의 : EQU계산 추가해야함
+ * ----------------------------------------------------------------------------------
+ */
+int add_symbol(section* curSection, short blockFlag, char* label) {
+	strcpy(curSection->sym_table[curSection->sym_num].symbol, label);
+	curSection->sym_table[curSection->sym_num].block = blockFlag;
+
+	if (blockFlag == 3) {
+		// EQU계산 추가해야함
+		curSection->sym_table[curSection->sym_num++].addr = 0;
+	}
+	else
+		curSection->sym_table[curSection->sym_num++].addr = curSection->addr[blockFlag];
+	return 0;
+}
 /* ----------------------------------------------------------------------------------
 * 설명 : 입력된 문자열의 이름을 가진 파일에 프로그램의 결과를 저장하는 함수이다.
 *        여기서 출력되는 내용은 명령어 옆에 OPCODE가 기록된 표(과제 4번) 이다.
@@ -579,18 +541,25 @@ void make_opcode_output(char* file_name)
 */
 void make_symtab_output(char* file_name)
 {
+	FILE* file = stdout;
+	//if (file_name != NULL) {
+	//	char file_name_ext[20] = { 0, };
+	//	sprintf(file_name_ext, "%s.txt", file_name);
+	//	file = fopen(file_name_ext, "w");
+	//}
 	section* curSection = &section_table[0];
-	for (int i = 0; i < section_num +1; i++){
-		curSection =& section_table[i];
+	for (int i = 0; i < section_num + 1; i++) {
+		curSection = &section_table[i];
 		for (int j = 0; j < curSection->sym_num; j++) {
-			int addr = 0;
+			int addr = curSection->sym_table[j].addr;
 			if (curSection->sym_table[j].block == 1)
-				addr = curSection->defaultAddr + curSection->sym_table[j].addr;
-			printf("%-30s%X\n", curSection->sym_table[j].symbol, curSection->sym_table[j].addr);
+				addr += curSection->addr[0];
+			else if (curSection->sym_table[j].block == 2)
+				addr += curSection->addr[0] + curSection->addr[1];
+			fprintf(file, "%-30s%X\n", curSection->sym_table[j].symbol, addr);
 		}
 		printf("\n");
 	}
-
 }
 
 /* ----------------------------------------------------------------------------------
@@ -603,15 +572,25 @@ void make_symtab_output(char* file_name)
 *
 * -----------------------------------------------------------------------------------
 */
-void make_literaltab_output(char* filen_ame)
+void make_literaltab_output(char* file_name)
 {
+	FILE* file = stdout;
+	//if (file_name != NULL) {
+	//	char file_name_ext[20] = { 0, };
+	//	sprintf(file_name_ext, "%s.txt", file_name);
+	//	file = fopen(file_name_ext, "w");
+	//}
 	section* curSection = &section_table[0];
 	for (int i = 0; i < section_num + 1; i++) {
 		curSection = &section_table[i];
 		for (int j = 0; j < curSection->literal_num; j++) {
-			printf("%-30s%X\n", curSection->literal_table[j].literal, curSection->literal_table[j].addr);
+			int addr = curSection->literal_table[j].addr;
+			if (curSection->literal_table[j].block == 1)
+				addr += curSection->addr[0];
+			else if (curSection->literal_table[j].block == 2)
+				addr += curSection->addr[0] + curSection->addr[1];
+			fprintf(file, "%-30s%X\n", curSection->literal_table[j].literal, addr);
 		}
-		printf("\n");
 	}
 }
 
@@ -627,7 +606,6 @@ void make_literaltab_output(char* filen_ame)
 */
 static int assem_pass2(void)
 {
-
 	/* add your code here */
 }
 

@@ -42,7 +42,8 @@ struct token_unit
     char* operator;             //명령어 라인 중 operator
     char* operand[MAX_OPERAND]; //명령어 라인 중 operand
     char* comment;              //명령어 라인 중 comment
-    //char nixbpe; // 추후 프로젝트에서 사용된다.
+    char nixbpe;                // 하위 6bit 사용 : _ _ n i x b p e
+    unsigned int object_code;  // 명령어 라인의 object_code
 };
 
 typedef struct token_unit token;
@@ -56,7 +57,7 @@ static int token_line;
 struct symbol_unit
 {
     char symbol[10];
-    short block; // 0 = default  1 = CDATA  2 = CBLKS
+    short block; // 0 = default  1 = CDATA  2 = CBLKS 3 = EQU
     int addr;
 };
 
@@ -86,9 +87,7 @@ struct section_unit {
     int literal_num;
     symbol sym_table[MAX_LINES];
     int sym_num;
-    int defaultAddr;
-    int CDATAAddr;
-    int CBLKSAddr;
+    int addr[3]; // 0 = default 1 = CDATA  2= CBLKS
 };
 
 typedef struct section_unit section;
@@ -108,6 +107,11 @@ int token_parsing(char* str);
 char* tokenizer(char* source, char** dest, char delimeter);
 int search_opcode(char* str);
 static int assem_pass1(void);
+int literal_parsing(section** curSection, token* Token);
+int update_literal_addr(section* curSection, short blockFlag);
+int symbol_parsing(section* curSection, token* Token, short *blockFlag);
+section* init_section(int section_num);
+int add_symbol(section* curSection, short blockFlag, char* label);
 void make_opcode_output(char* file_name);
 
 void make_symtab_output(char* file_name);
