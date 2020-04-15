@@ -109,9 +109,11 @@ int search_opcode(char* str);
 static int assem_pass1(void);
 int literal_parsing(section** curSection, token* Token);
 int update_literal_addr(section* curSection, short blockFlag);
+int search_literal(section curSection, char* str);
 int symbol_parsing(section* curSection, token* Token, short *blockFlag);
 section* init_section(int section_num);
 int add_symbol(section* curSection, short blockFlag, char* label);
+int search_symbol(section curSection, char* str);
 void make_opcode_output(char* file_name);
 
 void make_symtab_output(char* file_name);

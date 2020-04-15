@@ -44,13 +44,13 @@ int main(int args, char* arg[])
 
 	make_symtab_output("symtab_20160345");
 	make_literaltab_output("literaltab_20160345");
-	//if (assem_pass2() < 0)
-	//{
-	//	printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n");
-	//	return -1;
-	//}
+	if (assem_pass2() < 0)
+	{
+		printf(" assem_pass2: 패스2 과정에서 실패하였습니다.  \n");
+		return -1;
+	}
 
-	//make_objectcode_output("output_20160345");
+	make_objectcode_output("output_20160345");
 
 	return 0;
 }
@@ -375,6 +375,25 @@ int update_literal_addr(section* curSection, short blockFlag) {
 }
 
 /* ----------------------------------------------------------------------------------
+ * 설명 : 리터럴을 조회하는 함수이다.
+ * 매계 : 현재 섹션 주소, 문자열
+ * 반환 : 리터럴 주소, 에러 < 0
+ * 주의 : 블록 예외처리 해야함
+ * ----------------------------------------------------------------------------------
+ */
+int search_literal(section curSection, char* str) {
+	for (int i = 0; i < curSection.literal_num; i++) {
+		if (strcmp(curSection.literal_table[i].literal, str) == 0) {
+			int addr = curSection.literal_table[i].addr;
+			if (curSection.literal_table[i].block == 1)
+				addr += curSection.addr[0];
+			else if (curSection.literal_table[i].block == 2)
+				addr += curSection.addr[0] + curSection.addr[1];
+			return addr;
+		}
+	}
+}
+/* ----------------------------------------------------------------------------------
  * 설명 : 토큰을 분석하여 심볼 테이블을 작성하는 함수이다.
  *        패스 1로 부터 호출된다.
  * 매계 : 현재 섹션 주소, 토큰, 블록상태
@@ -465,6 +484,27 @@ int add_symbol(section* curSection, short blockFlag, char* label) {
 		curSection->sym_table[curSection->sym_num++].addr = curSection->addr[blockFlag];
 	return 0;
 }
+
+/* ----------------------------------------------------------------------------------
+ * 설명 : 심볼 테이블에서 심볼을 조회하는 함수이다.
+ * 매계 : 현재 섹션 주소, 심볼
+ * 반환 : 심볼 주소 = 0 , 에러 < 0
+ * 주의 : 블록 예외처리해야함
+ * ----------------------------------------------------------------------------------
+ */
+int search_symbol(section curSection, char* str) {
+	for (int i = 0; i < curSection.sym_num; i++) {
+		if (strcmp(curSection.sym_table[i].symbol, str) == 0) {
+			int addr = curSection.sym_table[i].addr;
+			if (curSection.sym_table[i].block == 1)
+				addr += curSection.addr[0];
+			else if (curSection.sym_table[i].block == 2)
+				addr += curSection.addr[0] + curSection.addr[1];
+			return addr;
+		}
+	}
+}
+
 /* ----------------------------------------------------------------------------------
 * 설명 : 입력된 문자열의 이름을 가진 파일에 프로그램의 결과를 저장하는 함수이다.
 *        여기서 출력되는 내용은 명령어 옆에 OPCODE가 기록된 표(과제 4번) 이다.
@@ -601,12 +641,84 @@ void make_literaltab_output(char* file_name)
 *		   1. 실제로 해당 어셈블리 명령어를 기계어로 바꾸는 작업을 수행한다.
 * 매계 : 없음
 * 반환 : 정상종료 = 0, 에러발생 = < 0
-* 주의 :
+* 주의 : 3형식 주소입력까지 작업함
 * -----------------------------------------------------------------------------------
 */
 static int assem_pass2(void)
 {
-	/* add your code here */
+	int pc = 0;
+	section* curSection = &section_table[0];
+	for (int i = 0; i < token_line; i++) {
+		if (token_table[i] == NULL)
+			continue;
+		// 섹션 감지
+		if (strcmp(token_table[i]->operator,"CSECT") == 0) {
+			pc = 0;
+			curSection += 1;
+		}
+		int index = search_opcode(token_table[i]->operator);
+		if (index > 0) {
+			printf("%-06X\t", pc);
+			if (inst_table[index]->format == 1) {
+				pc += 1;
+				token_table[i]->object_code += inst_table[index]->opcode;
+				printf("%X\n", token_table[i]->object_code);
+			}
+			else if (inst_table[index]->format == 2) {
+				pc += 2;
+				token_table[i]->object_code += inst_table[index]->opcode << 8;
+				//token_table[i]->object_code += token_table[i]->operand[0]
+				printf("%X\n", token_table[i]->object_code);
+			}
+			else if (inst_table[index]->format == 0) {
+				if (token_table[i]->operator[0] != '+') { //3형식
+					pc += 3;
+					token_table[i]->object_code += inst_table[index]->opcode << 16;
+					if (token_table[i]->operand[0] != NULL)
+						if (token_table[i]->operand[0][0] == '#') { // immediate
+							token_table[i]->object_code += 1 << 16;
+							token_table[i]->object_code += atoi(&token_table[i]->operand[0][1]);
+						}
+						else if (token_table[i]->operand[0][0] == '@') { //indirect
+							token_table[i]->object_code += 2 << 16;
+							int addr = search_symbol(*curSection, &token_table[i]->operand[0][1]) - pc;
+							token_table[i]->object_code += addr & 0x00000fff;
+
+						}
+						else {											//simple
+							token_table[i]->object_code += 3 << 16;
+							if (token_table[i]->operand[0] == NULL)
+								continue;
+							int addr = 0;
+							if (token_table[i]->operand[0][0] == '=') {
+								char buf[10] = { 0, };
+								sscanf(&token_table[i]->operand[0][3], "%[^']s", buf);
+								addr = search_literal(*curSection, buf) - pc;
+							}
+							else
+								addr = search_symbol(*curSection, token_table[i]->operand[0]) - pc;
+							token_table[i]->object_code += addr & 0x00000fff;
+						}
+					else
+						token_table[i]->object_code += 3 << 16;
+
+
+					printf("%06X\n", token_table[i]->object_code);
+				}
+				else {//4형식
+					token_table[i]->object_code += inst_table[index]->opcode << 24;
+					token_table[i]->object_code += 3 << 24;
+					printf("%08X\n", token_table[i]->object_code);
+					pc += 4;
+				}
+
+			}
+		}
+		else
+		{
+
+		}
+	}
 }
 
 /* ----------------------------------------------------------------------------------
