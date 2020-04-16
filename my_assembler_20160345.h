@@ -56,8 +56,10 @@ static int token_line;
 struct symbol_unit
 {
     char symbol[10];
-    short block; // 0 = default  1 = CDATA  2 = CBLKS 3 = EQU
+    short block; // 0 = default  1 = CDATA  2 = CBLKS
     int addr;
+    int size;
+    _Bool isAbsolute;
     _Bool isBase;
 };
 
@@ -87,7 +89,9 @@ struct section_unit {
     int literal_num;
     symbol sym_table[MAX_LINES];
     int sym_num;
-    int addr[3]; // 0 = default 1 = CDATA  2= CBLKS
+    int addr[3]; // 0 = default 1 = CDATA  2= CBLKS 
+    char EXTDEF[MAX_OPERAND][10];
+    char EXTREF[MAX_OPERAND][10];
 };
 
 typedef struct section_unit section;
@@ -109,14 +113,16 @@ int search_opcode(char* str);
 static int assem_pass1(void);
 int literal_parsing(section** curSection, token* Token);
 int update_literal_addr(section* curSection, short blockFlag);
-int search_literal(section curSection, char* str);
+int search_literal(section* curSection, char* str);
 int symbol_parsing(section* curSection, token* Token, short *blockFlag);
 section* init_section(int section_num);
-int add_symbol(section* curSection, short blockFlag, char* label,_Bool isBase);
-int search_symbol(section curSection, char* str);
+int add_symbol(symbol* curSymbol, char* label, int addr, short blockFlag, _Bool isBase, _Bool isAbsolute);
+int search_symbol(section* curSection, char* str);
+int search_base(section* curSection);
 void make_opcode_output(char* file_name);
 
 void make_symtab_output(char* file_name);
 void make_literaltab_output(char* file_name);
 static int assem_pass2(void);
 void make_objectcode_output(char* file_name);
+int search_register_num(char c);
