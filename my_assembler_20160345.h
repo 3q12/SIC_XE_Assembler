@@ -75,6 +75,7 @@ struct literal_unit
     short block; // 0 = default  1 = CDATA  2 = CBLKS
     _Bool isConst;
     int addr;
+    int size;
 };
 
 typedef struct literal_unit literal;
@@ -117,7 +118,7 @@ int search_literal(section* curSection, char* str);
 int symbol_parsing(section* curSection, token* Token, short *blockFlag);
 section* init_section(int section_num);
 int add_symbol(symbol* curSymbol, char* label, int addr, short blockFlag, _Bool isBase, _Bool isAbsolute);
-int search_symbol(section* curSection, char* str);
+int search_symbol_addr(section* curSection, char* str);
 int search_base(section* curSection);
 void make_opcode_output(char* file_name);
 
