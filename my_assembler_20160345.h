@@ -6,7 +6,6 @@
 #define MAX_LINES 5000
 #define MAX_OPERAND 3
 #define MAX_SECTION 5
-
  /*
   * instruction 목록 파일로 부터 정보를 받아와서 생성하는 구조체 변수이다.
   * 구조는 각자의 instruction set의 양식에 맞춰 직접 구현하되
@@ -79,6 +78,15 @@ struct literal_unit
 };
 
 typedef struct literal_unit literal;
+
+
+struct modification_unit {
+    int addr;
+    char name[8];
+    _Bool isextend;
+};
+typedef struct modification_unit modify;
+
 /*
 * 섹션을 관리하는 구조체이다.
 * 섹션 테이블은 리터럴테이블, 심볼 테이블,심볼 수, 각 블록별 주소값으로 구성된다.
@@ -93,11 +101,16 @@ struct section_unit {
     int addr[3]; // 0 = default 1 = CDATA  2= CBLKS 
     char EXTDEF[MAX_OPERAND][10];
     char EXTREF[MAX_OPERAND][10];
+    char objCode[MAX_LINES][9];
+    modify modify_table[MAX_LINES];
+    int modify_num;
 };
 
 typedef struct section_unit section;
 section section_table[MAX_SECTION];
 static int section_num;
+
+
 
 static int locctr;
 
@@ -112,10 +125,8 @@ int token_parsing(char* str);
 char* tokenizer(char* source, char** dest, char delimeter);
 int search_opcode(char* str);
 static int assem_pass1(void);
-int literal_parsing(section** curSection, token* Token);
 int update_literal_addr(section* curSection, short blockFlag);
 int search_literal(section* curSection, char* str);
-int symbol_parsing(section* curSection, token* Token, short *blockFlag);
 section* init_section(int section_num);
 int add_symbol(symbol* curSymbol, char* label, int addr, short blockFlag, _Bool isBase, _Bool isAbsolute);
 int search_symbol_addr(section* curSection, char* str);
