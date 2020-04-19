@@ -102,6 +102,7 @@ struct section_unit {
     char EXTDEF[MAX_OPERAND][10];
     char EXTREF[MAX_OPERAND][10];
     char objCode[MAX_LINES][9];
+    int loc_table[MAX_LINES];
     modify modify_table[MAX_LINES];
     int modify_num;
 };

@@ -70,7 +70,7 @@ int init_my_assembler(void)
 
 	if ((result = init_inst_file("inst.data")) < 0)
 		return -1;
-	if ((result = init_input_file("input4.txt")) < 0)
+	if ((result = init_input_file("input.txt")) < 0)
 		return -1;
 	return result;
 }
@@ -506,7 +506,8 @@ void make_symtab_output(char* file_name)
 	for (int i = 0; i < line_num; i++) {
 		if (token_table[i] == NULL)
 			continue;
-
+		if (curSection->name[0] == 0)
+			strcpy(curSection->name, token_table[i]->label);
 		int inst = search_opcode(token_table[i]->operator), symbol_num = curSection->sym_num;
 		if (inst >= 0) {
 			int addr = curSection->addr[0];
@@ -555,8 +556,8 @@ void make_symtab_output(char* file_name)
 		else {
 			// 섹션 감지
 			if (strcmp(token_table[i]->operator,"CSECT") == 0) {
-				strcpy(curSection->name, token_table[i]->label);
 				curSection++;
+				strcpy(curSection->name, token_table[i]->label);
 				section_num++;
 				add_symbol(&curSection->sym_table[curSection->sym_num++], token_table[i]->label, curSection->addr[blockFlag], blockFlag, 0, 0);
 				strcpy(curSection->name, token_table[i]->label);
@@ -718,7 +719,8 @@ static int assem_pass2(void)
 			continue;
 		}
 		// modification 검사 그냥 4형식일때 인경우 계산해봐야함
-		if (token_table[i]->operand[0] != NULL && token_table[i]->operator[0] !='E')
+		_Bool added = 0;
+		if (token_table[i]->operand[0] != NULL && token_table[i]->operator[0] != 'E')
 			for (int j = 0; j < token_table[i]->operand[j] != NULL; j++) {
 				if (strchr(token_table[i]->operand[j], '+') != NULL || strchr(token_table[i]->operand[j], '-') != NULL) {
 					char buf[7] = { 0, }, modiflag = '+';
@@ -732,7 +734,8 @@ static int assem_pass2(void)
 								curSection->modify_table[curSection->modify_num++].addr = pc;
 								modiflag = token_table[i]->operand[j][k];
 								memset(buf, 0, 7);
-								cur = k+1;
+								cur = k + 1;
+								added = 1;
 								continue;
 							}
 							else
@@ -746,15 +749,18 @@ static int assem_pass2(void)
 						curSection->modify_table[curSection->modify_num].isextend = 1;
 					sprintf(curSection->modify_table[curSection->modify_num].name, "+%s", token_table[i]->operand[j]);
 					curSection->modify_table[curSection->modify_num++].addr = pc;
+					added = 1;
 				}
-				if (token_table[i]->operator[0] == '+') {
-					if(token_table[i]->operand[0][0]=='#')
+				if (token_table[i]->operator[0] == '+' && !added) {
+					if (token_table[i]->operand[0][0] == '#')
 						continue;
 					curSection->modify_table[curSection->modify_num].isextend = 1;
 					curSection->modify_table[curSection->modify_num++].addr = pc;
 				}
-
 			}
+
+		curSection->loc_table[obj_index] = pc;
+
 		// nixbpe 초기화
 		int index = search_opcode(token_table[i]->operator);
 		if (index > 0) {
@@ -831,28 +837,6 @@ static int assem_pass2(void)
 				}
 				else {//4형식
 
-					//// modification 검사
-					//for (int j = 0; j < token_table[i]->operand[j] != NULL; j++) {
-					//	if (strchr(token_table[i]->operand[j], '+') != NULL || strchr(token_table[i]->operand[j], '-') != NULL) {
-					//		char buf[7] = { 0, }, modiflag = '+';
-					//		int cur = 0;
-					//		for (int k = 0; k < strlen(token_table[i]->operand[j]); k++) {
-					//			if (token_table[i]->operand[j][k] == '+' || token_table[i]->operand[j][k] == '-') {
-					//				sprintf(curSection->modify_table[curSection->modify_num].name, "%c%s", modiflag, buf);
-					//				curSection->modify_table[curSection->modify_num++].addr = pc + 1;
-					//				modiflag = token_table[i]->operand[j][k];
-					//				memset(buf, 0, 7);
-					//				cur = k;
-					//			}
-					//			buf[k - cur] = token_table[i]->operand[j];
-					//		}
-					//	}
-					//	else if (search_ref(curSection, token_table[i]->operand[j]) == 0) {
-					//		sprintf(curSection->modify_table[curSection->modify_num].name, "+%s", token_table[i]->operand[j]);
-					//		curSection->modify_table[curSection->modify_num++].addr = pc + 1;
-					//	}
-					//}
-
 					int obj = 0, addr = 0;
 					obj += inst_table[index]->opcode << 24;
 					pc += 4;
@@ -883,6 +867,7 @@ static int assem_pass2(void)
 			}
 		}
 		else {
+			int obj_i = obj_index;
 			printf("\n%04X", pc);
 			//SymTab에서 확인
 			if (token_table[i]->label != NULL)
@@ -907,10 +892,12 @@ static int assem_pass2(void)
 					if (t >= pc && (curSection->literal_table[j].addr - litlen - pc) < 0xfff) {
 						sprintf(curSection->objCode[obj_index++], "%s", buf);
 						printf("\t%s", curSection->objCode[obj_index - 1]);
+						curSection->loc_table[obj_index - 1] = t;
 						pc += litlen;
 						lit_index++;
 					}
 				}
+				continue;
 			}
 			if (strcmp(token_table[i]->operator,"BYTE") == 0) {
 				char buf[32] = { 0, };
@@ -922,6 +909,8 @@ static int assem_pass2(void)
 				}
 				sprintf(curSection->objCode[obj_index++], "%s", buf);
 				printf("\t%s", curSection->objCode[obj_index - 1]);
+				curSection->loc_table[obj_index-1] = search_symbol_addr(curSection,token_table[i]->label);
+				continue;
 			}
 			else if (strcmp(token_table[i]->operator,"WORD") == 0) {
 				if (token_table[i]->operand[0][0] < '0' || token_table[i]->operand[0][0] > '9') {
@@ -953,15 +942,24 @@ static int assem_pass2(void)
 						buf[j - ptr] = token_table[i]->operand[0][j];
 					}
 					sprintf(curSection->objCode[obj_index++], "%06X", value);
+					curSection->loc_table[obj_index - 1] = search_symbol_addr(curSection, token_table[i]->label);
+					continue;
 				}
 				else
 					sprintf(curSection->objCode[obj_index++], "%06X", atoi(token_table[i]->operand[0]));
 				printf("\t%s", curSection->objCode[obj_index - 1]);
 			}
-			if (strcmp(token_table[i]->operator,"BASE") == 0)
+			if (strcmp(token_table[i]->operator,"BASE") == 0) {
 				set_base(curSection, token_table[i]->operand[0]);
+				sprintf(curSection->objCode[obj_index++], ".");
+				curSection->loc_table[obj_index - 1] = 0;
+				continue;
+			}
+			if (obj_i == obj_index)
+				sprintf(curSection->objCode[obj_index++], ".");
 		}
 	}
+	printf("\n");
 	return 0;
 }
 
@@ -984,8 +982,7 @@ void make_objectcode_output(char* file_name)
 	//}
 	section* curSection = &section_table[0];
 	for (int i = 0; i <= section_num; i++) {
-		printf("\nsection %d, size = %04X\n", i + 1, curSection->addr[0] + curSection->addr[1] + curSection->addr[2]);
-		fprintf(file, "H%s %06X%06X\n", curSection->name, 0, curSection->addr[0] + curSection->addr[1] + curSection->addr[2]);
+		fprintf(file, "H%-6s%06X%06X\n", curSection->name, 0, curSection->addr[0] + curSection->addr[1] + curSection->addr[2]);
 		char buf[70] = { 0, };
 		if (curSection->EXTDEF[0][0] != 0) {
 			buf[0] = 'D';
@@ -1002,44 +999,50 @@ void make_objectcode_output(char* file_name)
 		if (curSection->EXTREF[0][0] != 0) {
 			buf[0] = 'R';
 			for (int j = 0; j < MAX_OPERAND && curSection->EXTREF[j][0]; j++) {
-				if (j > 0)
-					strcat(buf, " ");
-				strcat(buf, curSection->EXTREF[j]);
+				char ref[8] = { 0, };
+				sprintf(ref, "%-6s", curSection->EXTREF[j]);
+				strcat(buf, ref);
 			}
-			fprintf(file, "%s\n", buf);
+			fprintf(file, "%06s\n", buf);
 			memset(buf, '\0', 70);
 		}
 
-		int length = 0, addr = 0;
-		_Bool isSubroutine = 0;
+		int length = 0, addr = 0, firstObject = 0;
 		for (int j = 0; curSection->objCode[j][0] != 0; j++) {
-			length += (strlen(curSection->objCode[j]) / 2 + strlen(curSection->objCode[j]) % 2);
-			if (length > 0x1E) {
-				length -= (strlen(curSection->objCode[j]) / 2 + strlen(curSection->objCode[j]) % 2);
-				fprintf(file, "T%06X%02X%s\n", addr, length, buf);
+			int test = length + strlen(curSection->objCode[j]) / 2 + strlen(curSection->objCode[j]) % 2;
+			if (test > 0x1E || curSection->objCode[j][0] == '.') {
+				if (strlen(buf) == 0)
+					continue;
+				else
+					if (curSection->loc_table[j] == 0)
+						continue;
+				fprintf(file, "T%06X%02X%s\n", curSection->loc_table[firstObject], length, buf);
 				memset(buf, 0, 70);
 				addr += length;
-				length = 8;
+				length = 0;
 			}
-			strcat(buf, curSection->objCode[j]);
-			if (strcmp(curSection->objCode[j], "4F0000") == 0)
-				isSubroutine = 1;
+			if (curSection->objCode[j][0] != '.') {
+				if (strlen(buf) == 0)
+					firstObject = j;
+				strcat(buf, curSection->objCode[j]);
+				length += (strlen(curSection->objCode[j]) / 2 + strlen(curSection->objCode[j]) % 2);
+			}
 		}
 		if (strlen(buf) > 0)
-			fprintf(file, "T%06X%02X%s\n", addr, strlen(buf)/2 +strlen(buf)%2, buf);
-		for (int j = 0;j<curSection->modify_num; j++) {
-			if(curSection->modify_table[j].isextend)
-				fprintf(file, "M%06X05", curSection->modify_table[j].addr+1);
+			fprintf(file, "T%06X%02X%s\n", curSection->loc_table[firstObject], strlen(buf) / 2 + strlen(buf) % 2, buf);
+		for (int j = 0; j < curSection->modify_num; j++) {
+			if (curSection->modify_table[j].isextend)
+				fprintf(file, "M%06X05", curSection->modify_table[j].addr + 1);
 			else
 				fprintf(file, "M%06X06", curSection->modify_table[j].addr);
-			if(curSection->modify_table[j].name[0]!=0)
+			if (curSection->modify_table[j].name[0] != 0)
 				fprintf(file, "%s", curSection->modify_table[j].name);
 			fprintf(file, "\n");
 		}
-		if (isSubroutine)
-			fprintf(file, "E\n");
-		else
+		if (i == 0)
 			fprintf(file, "E000000\n");
+		else
+			fprintf(file, "E\n");
 		curSection++;
 	}
 }
@@ -1052,7 +1055,7 @@ int search_base(section* curSection) {
 	return -1;
 }
 int search_ref(section* curSection, char* str) {
-	for (int i = 0; i<MAX_OPERAND; i++)
+	for (int i = 0; i < MAX_OPERAND; i++)
 		if (strcmp(curSection->EXTREF[i], str) == 0)
 			return 0;
 	return -1;
