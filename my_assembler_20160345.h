@@ -58,9 +58,14 @@ struct symbol_unit
     short block; // 0 = default  1 = CDATA  2 = CBLKS
     int addr;
     int size;
-    _Bool isAbsolute;
-    _Bool isBase;
 };
+
+
+//struct symbol_unit
+//{
+//    char symbol[10];
+//    int addr;
+//};
 
 typedef struct symbol_unit symbol;
 
@@ -72,10 +77,13 @@ struct literal_unit
 {
     char literal[10];
     short block; // 0 = default  1 = CDATA  2 = CBLKS
-    _Bool isConst;
     int addr;
-    int size;
 };
+//struct literal_unit
+//{
+//    char literal[10];
+//    int addr;
+//};
 
 typedef struct literal_unit literal;
 
@@ -98,6 +106,7 @@ struct section_unit {
     int literal_num;
     symbol sym_table[MAX_LINES];
     int sym_num;
+    int base;
     int addr[3]; // 0 = default 1 = CDATA  2= CBLKS 
     char EXTDEF[MAX_OPERAND][10];
     char EXTREF[MAX_OPERAND][10];
@@ -129,9 +138,8 @@ static int assem_pass1(void);
 int update_literal_addr(section* curSection, short blockFlag);
 int search_literal(section* curSection, char* str);
 section* init_section(int section_num);
-int add_symbol(symbol* curSymbol, char* label, int addr, short blockFlag, _Bool isBase, _Bool isAbsolute);
+int add_symbol(section* curSection,int* index, char* label, int addr, short blockFlag, _Bool isAbsolute);
 int search_symbol_addr(section* curSection, char* str);
-int search_base(section* curSection);
 void make_opcode_output(char* file_name);
 
 void make_symtab_output(char* file_name);
@@ -139,3 +147,14 @@ void make_literaltab_output(char* file_name);
 static int assem_pass2(void);
 void make_objectcode_output(char* file_name);
 int search_register_num(char c);
+
+
+void modification_check(section* curSection, token* Token);
+void make_objectcode_format1(section* curSection, int index, int* obj_index);
+void make_objectcode_format2(section* curSection, token* Token,int index, int* obj_index);
+void make_objectcode_format3(section* curSection, token* Token,int index, int *obj_index);
+void make_objectcode_format4(section* curSection, token* Token,int index, int* obj_index);
+void make_objectcode_literal(section* curSection, int* lit_index, int* obj_index);
+void make_objectcode_byte(section* curSection, token* Token, int* obj_index);
+int make_objectcode_word(section* curSection, token* Token, int* obj_index);
+int set_base(section* curSection, char* str, int* obj_index);
