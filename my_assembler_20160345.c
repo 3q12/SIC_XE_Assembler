@@ -350,14 +350,39 @@ int search_literal(section* curSection, char* str) {
  *        패스 1로 부터 호출된다.
  * 매계 : 현재 섹션 주소,  블록상태, 라벨
  * 반환 : 정상종료 = 0 , 에러 < 0
- * 주의 :
+ * 주의 : 절대주소 핸들링해야함
  * ----------------------------------------------------------------------------------
  */
-int add_symbol(section* curSection, int* index, char* label, int addr, short blockFlag, _Bool isAbsolute) {
-	strcpy(curSection->sym_table[*index].symbol, label);
-	curSection->sym_table[*index].block = blockFlag;
-	curSection->sym_table[*index].addr = addr;
-	*index += 1;
+int add_symbol(section* curSection, token* Token, short blockFlag) {
+	strcpy(curSection->sym_table[curSection->sym_num++].symbol, Token->label);
+	curSection->sym_table[curSection->sym_num-1].block = blockFlag;
+	curSection->sym_table[curSection->sym_num-1].addr = curSection->addr[blockFlag];
+
+	if (strcmp(Token->operator,"EQU") == 0) {
+		if (Token->operand[0][0] != '*'){
+			int ptr = 0, isAbsolute = 1, value = 0;
+			char buf[100] = { 0, }, operator ='+';
+			for (int j = 0; j <= strlen(Token->operand[0]); j++) {
+				if (Token->operand[0][j] == '+' || Token->operand[0][j] == '-' || j == strlen(Token->operand[0])) {
+					if (operator == '+') {
+						value += search_symbol_addr(curSection, buf);
+						isAbsolute--;
+					}
+					else {
+						value -= search_symbol_addr(curSection, buf);
+						if (operator == '-')
+							isAbsolute++;
+					}
+					operator = Token->operand[0][j];
+					ptr = j + 1;
+					memset(buf, 0, 100);
+					continue;
+				}
+				buf[j - ptr] = Token->operand[0][j];
+			}
+			curSection->sym_table[curSection->sym_num-1].addr = value;
+		}
+	}
 	return 0;
 }
 
@@ -479,6 +504,26 @@ void make_opcode_output(char* file_name)
 	//}
 }
 
+void add_literal(section* curSection, token* Token) {
+		char buf[32] = { 0, };
+		sscanf(&Token->operand[0][3], "%[^']s", buf);
+		_Bool addFlag = 1;
+		for (int j = 0; j < curSection->literal_num; j++)
+			if (strcmp(buf, curSection->literal_table[j].literal + 1) == 0) {
+				addFlag = 0;
+				break;
+			}
+		if (addFlag) {
+			if (Token->operand[0][1] == 'X')
+				curSection->literal_table[curSection->literal_num].literal[0] = 'X';
+			else
+				curSection->literal_table[curSection->literal_num].literal[0] = 'C';
+
+			strcpy(curSection->literal_table[curSection->literal_num].literal + 1, buf);
+			curSection->literal_table[curSection->literal_num++].addr = -1;
+		}
+}
+
 /* ----------------------------------------------------------------------------------
 * 설명 : 입력된 문자열의 이름을 가진 파일에 프로그램의 결과를 저장하는 함수이다.
 *        여기서 출력되는 내용은 SYMBOL별 주소값이 저장된 TABLE이다.
@@ -513,33 +558,15 @@ void make_symtab_output(char* file_name)
 		int inst = search_opcode(token_table[i]->operator), symbol_num = curSection->sym_num;
 		if (inst >= 0) {
 			int addr = curSection->addr[0];
-			// symbol 발견시 심볼 테이블에 추가
 
+			// symbol 발견시 심볼 테이블에 추가
 			if (token_table[i]->label != NULL)
-				add_symbol(curSection, &curSection->sym_num, token_table[i]->label, curSection->addr[blockFlag], blockFlag, 0, 0);
+				add_symbol(curSection, token_table[i], blockFlag);
 
 			//literal 발견시 리터럴 테이블에 추가
-			if (token_table[i]->operand[0] != NULL) {
-				if (token_table[i]->operand[0][0] == '=') {
-					char buf[32] = { 0, };
-					sscanf(&token_table[i]->operand[0][3], "%[^']s", buf);
-					_Bool addFlag = 1;
-					for (int j = 0; j < curSection->literal_num; j++)
-						if (strcmp(buf, curSection->literal_table[j].literal+1) == 0) {
-							addFlag = 0;
-							break;
-						}
-					if (addFlag) {
-						if (token_table[i]->operand[0][1] == 'X')
-							curSection->literal_table[curSection->literal_num].literal[0] = 'X';
-						else
-							curSection->literal_table[curSection->literal_num].literal[0] = 'C';
-
-						strcpy(curSection->literal_table[curSection->literal_num].literal+1, buf);
-						curSection->literal_table[curSection->literal_num++].addr = -1;
-					}
-				}
-			}
+			if (token_table[i]->operand[0] != NULL)
+				if (token_table[i]->operand[0][0] == '=')
+					add_literal(curSection, token_table[i]);
 
 			// 주소 증가
 			unsigned short format = inst_table[inst]->format;
@@ -562,33 +589,30 @@ void make_symtab_output(char* file_name)
 				curSection++;
 				strcpy(curSection->name, token_table[i]->label);
 				section_num++;
-				add_symbol(curSection, &curSection->sym_num, token_table[i]->label, curSection->addr[blockFlag], blockFlag, 0, 0);
+				add_symbol(curSection, token_table[i], blockFlag);
 				strcpy(curSection->name, token_table[i]->label);
 				continue;
 			}
 
 			// EXTDEF 감지
-			if (strcmp(token_table[i]->operator,"EXTDEF") == 0) {
+			else if (strcmp(token_table[i]->operator,"EXTDEF") == 0) {
 				for (int j = 0; token_table[i]->operand[j] != NULL; j++)
 					strcpy(curSection->EXTDEF[j], token_table[i]->operand[j]);
 				continue;
 			}
 
 			// EXTREF 감지
-			if (strcmp(token_table[i]->operator,"EXTREF") == 0) {
+			else if (strcmp(token_table[i]->operator,"EXTREF") == 0) {
 				for (int j = 0; token_table[i]->operand[j] != NULL; j++)
 					strcpy(curSection->EXTREF[j], token_table[i]->operand[j]);
 				continue;
 			}
 
 			// 블록 감지
-			if (strcmp(token_table[i]->operator,"USE") == 0) {
-				if (token_table[i]->operand[0] == NULL)
-					blockFlag = 0;
-				else if (strcmp(token_table[i]->operand[0], "CDATA") == 0)
-					blockFlag = 1;
-				else if (strcmp(token_table[i]->operand[0], "CBLKS") == 0)
-					blockFlag = 2;
+			else if (strcmp(token_table[i]->operator,"USE") == 0) {
+				if (token_table[i]->operand[0] == NULL)							blockFlag = 0;
+				else if (strcmp(token_table[i]->operand[0], "CDATA") == 0)		blockFlag = 1;
+				else if (strcmp(token_table[i]->operand[0], "CBLKS") == 0)		blockFlag = 2;
 				continue;
 			}
 
@@ -596,40 +620,8 @@ void make_symtab_output(char* file_name)
 			int addr = curSection->addr[blockFlag], symbol_num = curSection->sym_num;
 
 			// symbol 테이블에 추가
-			if (token_table[i]->label != NULL) {
-				//EQU인 경우 처리
-				if (strcmp(token_table[i]->operator,"EQU") == 0) {
-					int value = 0;
-					if (token_table[i]->operand[0][0] == '*')
-						add_symbol(curSection, &curSection->sym_num, token_table[i]->label, curSection->addr[blockFlag], blockFlag, 0, 0);
-					else {
-						int ptr = 0, isAbsolute = 1;
-						char buf[100] = { 0, }, operator ='+';
-						for (int j = 0; j <= strlen(token_table[i]->operand[0]); j++) {
-							if (token_table[i]->operand[0][j] == '+' || token_table[i]->operand[0][j] == '-' || j == strlen(token_table[i]->operand[0])) {
-								if (operator == '+') {
-									value += search_symbol_addr(curSection, buf);
-									isAbsolute--;
-								}
-								else {
-									value -= search_symbol_addr(curSection, buf);
-									if (operator == '-')
-										isAbsolute++;
-								}
-								operator = token_table[i]->operand[0][j];
-								ptr = j + 1;
-								memset(buf, 0, 100);
-								continue;
-							}
-							buf[j - ptr] = token_table[i]->operand[0][j];
-						}
-						add_symbol(curSection, &curSection->sym_num, token_table[i]->label, value, blockFlag, 0, isAbsolute);
-					}
-				}
-				else
-					add_symbol(curSection, &curSection->sym_num, token_table[i]->label, curSection->addr[blockFlag], blockFlag, 0, 0);
-			}
-
+			if (token_table[i]->label != NULL)
+					add_symbol(curSection, token_table[i], blockFlag);
 
 			// 리터널 테이블 주소 업데이트, 주소증가
 			if (strcmp(token_table[i]->operator,"LTORG") == 0 || strcmp(token_table[i]->operator,"END") == 0) {
@@ -699,7 +691,7 @@ void make_literaltab_output(char* file_name)
 				addr += curSection->addr[0];
 			else if (curSection->literal_table[j].block == 2)
 				addr += curSection->addr[0] + curSection->addr[1];
-			fprintf(file, "%-30s%X\n", curSection->literal_table[j].literal, addr);
+			fprintf(file, "%-30s%X\n", curSection->literal_table[j].literal+1, addr);
 		}
 	}
 }
