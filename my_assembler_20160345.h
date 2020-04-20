@@ -57,15 +57,8 @@ struct symbol_unit
     char symbol[10];
     short block; // 0 = default  1 = CDATA  2 = CBLKS   //제거대상
     int addr;
-    int size;                                           //제거대상
 };
 
-
-//struct symbol_unit
-//{
-//    char symbol[10];
-//    int addr;
-//};
 
 typedef struct symbol_unit symbol;
 
@@ -130,8 +123,8 @@ int token_parsing(char* str);
 char* tokenizer(char* source, char** dest, char delimeter);
 int search_opcode(char* str);
 static int assem_pass1(void);
-int update_literal_addr(section* curSection, short blockFlag);
-int search_literal(section* curSection, char* str);
+int update_literal_addr(section* curSection, short blockFlag, int* loc_index);
+int get_literal_addr(section* curSection, char* str);
 section* init_section(int section_num);
 int add_symbol(section* curSection,token* Token, short blockFlag);
 void add_literal(section* curSection, token* Token);
@@ -154,3 +147,5 @@ void make_objectcode_literal(section* curSection, int* lit_index, int* obj_index
 void make_objectcode_byte(section* curSection, token* Token, int* obj_index);
 int make_objectcode_word(section* curSection, token* Token, int* obj_index);
 int set_base(section* curSection, char* str, int* obj_index);
+_Bool is_ref(section* curSection, char* str);
+int search_register_num(char c);
