@@ -664,6 +664,14 @@ void make_literaltab_output(char* file_name)
 	}
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : 오브젝트 프로그램으로 변환시 modification record를 작성해야하는 항목을 확인한다.
+* 매계 : 현재 섹션 포인터, 현재 토큰 포인터
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void modification_check(section* curSection, token* Token) {
 	_Bool added = 0;
 	if (Token->operand[0] != NULL && Token->operator[0] != 'E')
@@ -705,10 +713,28 @@ void modification_check(section* curSection, token* Token) {
 			}
 		}
 }
+
+/* ----------------------------------------------------------------------------------
+* 설명 : 1형식 명령어를 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터, 명령어 인덱스, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void make_objectcode_format1(section* curSection, int index, int* obj_index) {
 	locctr += 1;
 	sprintf(curSection->objCode[(*obj_index)++], "%02X", inst_table[index]->opcode);
 }
+
+/* ----------------------------------------------------------------------------------
+* 설명 : 2형식 명령어를 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터, 명령어 인덱스, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void make_objectcode_format2(section* curSection, token* Token, int index, int* obj_index) {
 	locctr += 2;
 	int obj = 0;
@@ -716,10 +742,19 @@ void make_objectcode_format2(section* curSection, token* Token, int index, int* 
 	for (int j = 0; j < 2; j++) {
 		if (Token->operand[j] == NULL)
 			continue;
-		obj += search_register_num(Token->operand[j][0]) << (1 - j) * 4;
+		obj += get_register_num(Token->operand[j][0]) << (1 - j) * 4;
 	}
 	sprintf(curSection->objCode[(*obj_index)++], "%04X", obj);
 }
+
+/* ----------------------------------------------------------------------------------
+* 설명 : 3형식 명령어를 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터, 명령어 인덱스, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void make_objectcode_format3(section* curSection, token* Token, int index, int* obj_index) {
 	locctr += 3;
 	int obj = 0;
@@ -770,6 +805,14 @@ void make_objectcode_format3(section* curSection, token* Token, int index, int* 
 	sprintf(curSection->objCode[(*obj_index)++], "%06X", obj);
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : 4형식 명령어를 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터, 명령어 인덱스, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void make_objectcode_format4(section* curSection, token* Token, int index, int* obj_index) {
 	int obj = 0, addr = 0;
 	obj += inst_table[index]->opcode << 24;
@@ -796,6 +839,14 @@ void make_objectcode_format4(section* curSection, token* Token, int index, int* 
 	sprintf(curSection->objCode[(*obj_index)++], "%08X", obj);
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : 리터럴을 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터, 리터럴 인덱스, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void make_objectcode_literal(section* curSection, int* lit_index, int* obj_index) {
 	for (int j = *lit_index; j < curSection->literal_num; j++) {
 		int litlen = 0;
@@ -818,6 +869,14 @@ void make_objectcode_literal(section* curSection, int* lit_index, int* obj_index
 	}
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : BYTE 데이터를 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터,현재 토큰 포인터, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 void make_objectcode_byte(section* curSection, token* Token, int* obj_index) {
 	char buf[32] = { 0, };
 	if (Token->operand[0][0] == 'X')
@@ -829,6 +888,14 @@ void make_objectcode_byte(section* curSection, token* Token, int* obj_index) {
 	sprintf(curSection->objCode[(*obj_index)++], "%s", buf);
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : WORD 데이터를 오브젝트코드로 변환하여 objCode 테이블에 입력
+* 매계 : 현재 섹션 포인터,현재 토큰 포인터, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 int make_objectcode_word(section* curSection, token* Token, int* obj_index) {
 	if (Token->operand[0][0] < '0' || Token->operand[0][0] > '9') {
 		int value = 0, ptr = 0;
@@ -864,6 +931,14 @@ int make_objectcode_word(section* curSection, token* Token, int* obj_index) {
 	return 0;
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : 현재 섹션의 베이스를 설정
+* 매계 : 현재 섹션 포인터,베이스로 지정할 심볼 문자열, 오브젝트코드 인덱스
+* 반환 : 없음
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 int set_base(section* curSection, char* str, int* obj_index) {
 	for (int i = 0; i < curSection->sym_num; i++)
 		if (strcmp(curSection->sym_table[i].symbol, str) == 0) {
@@ -873,6 +948,7 @@ int set_base(section* curSection, char* str, int* obj_index) {
 	sprintf(curSection->objCode[(*obj_index)++], ".");
 	return 0;
 }
+
 /* ----------------------------------------------------------------------------------
 * 설명 : 어셈블리 코드를 기계어 코드로 바꾸기 위한 패스2 과정을 수행하는 함수이다.
 *		   패스 2에서는 프로그램을 기계어로 바꾸는 작업은 라인 단위로 수행된다.
@@ -1025,6 +1101,14 @@ void make_objectcode_output(char* file_name)
 	}
 }
 
+/* ----------------------------------------------------------------------------------
+* 설명 : 주어진 심볼이 REFERENCE인지 확인하는 함수이다.
+* 매계 : 현재 섹션 포인터,심볼 문자열
+* 반환 : 레퍼런스 = TRUE   아닌경우 = FALSE
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
 _Bool is_ref(section* curSection, char* str) {
 	for (int i = 0; i < MAX_OPERAND; i++)
 		if (strcmp(curSection->EXTREF[i], str) == 0)
@@ -1032,7 +1116,15 @@ _Bool is_ref(section* curSection, char* str) {
 	return 0;
 }
 
-int search_register_num(char c) {
+/* ----------------------------------------------------------------------------------
+* 설명 : 레지스터 번호를 조회하는 함수이다.
+* 매계 : 레지스터 문자
+* 반환 : 레지스터 번호   오류 = -1
+* 주의 :
+*
+* -----------------------------------------------------------------------------------
+*/
+int get_register_num(char c) {
 	if (c == 'A')			return 0;
 	else if (c == 'X')		return 1;
 	else if (c == 'L')		return 2;

@@ -135,7 +135,6 @@ void make_symtab_output(char* file_name);
 void make_literaltab_output(char* file_name);
 static int assem_pass2(void);
 void make_objectcode_output(char* file_name);
-int search_register_num(char c);
 
 
 void modification_check(section* curSection, token* Token);
@@ -148,4 +147,4 @@ void make_objectcode_byte(section* curSection, token* Token, int* obj_index);
 int make_objectcode_word(section* curSection, token* Token, int* obj_index);
 int set_base(section* curSection, char* str, int* obj_index);
 _Bool is_ref(section* curSection, char* str);
-int search_register_num(char c);
+int get_register_num(char c);
