@@ -6,7 +6,6 @@
 #define MAX_LINES 5000
 #define MAX_OPERAND 3
 #define MAX_SECTION 5
-
  /*
   * instruction 목록 파일로 부터 정보를 받아와서 생성하는 구조체 변수이다.
   * 구조는 각자의 instruction set의 양식에 맞춰 직접 구현하되
@@ -56,12 +55,11 @@ static int token_line;
 struct symbol_unit
 {
     char symbol[10];
-    short block; // 0 = default  1 = CDATA  2 = CBLKS
+    short block; // 0 = default  1 = CDATA  2 = CBLKS   //제거대상
+    _Bool isAbsoulte;
     int addr;
-    int size;
-    _Bool isAbsolute;
-    _Bool isBase;
 };
+
 
 typedef struct symbol_unit symbol;
 
@@ -72,13 +70,28 @@ typedef struct symbol_unit symbol;
 struct literal_unit
 {
     char literal[10];
-    short block; // 0 = default  1 = CDATA  2 = CBLKS
-    _Bool isConst;
+    short block; // 0 = default  1 = CDATA  2 = CBLKS         //제거대상
     int addr;
-    int size;
 };
 
 typedef struct literal_unit literal;
+
+
+struct modification_unit {
+    int addr;
+    char name[8];
+    _Bool isextend;
+};
+typedef struct modification_unit modify;
+
+struct location_unit {
+    int addr;
+    int block;
+};
+typedef struct location_unit lc;
+
+static int locctr;
+
 /*
 * 섹션을 관리하는 구조체이다.
 * 섹션 테이블은 리터럴테이블, 심볼 테이블,심볼 수, 각 블록별 주소값으로 구성된다.
@@ -90,16 +103,22 @@ struct section_unit {
     int literal_num;
     symbol sym_table[MAX_LINES];
     int sym_num;
+    int base;
     int addr[3]; // 0 = default 1 = CDATA  2= CBLKS 
     char EXTDEF[MAX_OPERAND][10];
     char EXTREF[MAX_OPERAND][10];
+    char objCode[MAX_LINES][9];
+    lc loc_table[MAX_LINES];
+    modify modify_table[MAX_LINES];
+    int modify_num;
 };
 
 typedef struct section_unit section;
 section section_table[MAX_SECTION];
 static int section_num;
 
-static int locctr;
+
+
 
 //--------------
 
@@ -112,18 +131,29 @@ int token_parsing(char* str);
 char* tokenizer(char* source, char** dest, char delimeter);
 int search_opcode(char* str);
 static int assem_pass1(void);
-int literal_parsing(section** curSection, token* Token);
-int update_literal_addr(section* curSection, short blockFlag);
-int search_literal(section* curSection, char* str);
-int symbol_parsing(section* curSection, token* Token, short *blockFlag);
+int update_literal_addr(section* curSection, short blockFlag, int* loc_index);
+int get_literal_addr(section* curSection, char* str);
 section* init_section(int section_num);
-int add_symbol(symbol* curSymbol, char* label, int addr, short blockFlag, _Bool isBase, _Bool isAbsolute);
+int add_symbol(section* curSection,token* Token, short blockFlag);
+int literal_parsing(section* curSection, token* Token);
+int symbol_parsing(section** curSection, token* Token, short* blockFlag, int* loc_index);
 int search_symbol_addr(section* curSection, char* str);
-int search_base(section* curSection);
 void make_opcode_output(char* file_name);
 
 void make_symtab_output(char* file_name);
 void make_literaltab_output(char* file_name);
 static int assem_pass2(void);
 void make_objectcode_output(char* file_name);
-int search_register_num(char c);
+
+
+void modification_check(section* curSection, token* Token);
+void make_objectcode_format1(section* curSection, int index, int* obj_index);
+void make_objectcode_format2(section* curSection, token* Token,int index, int* obj_index);
+void make_objectcode_format3(section* curSection, token* Token,int index, int *obj_index);
+void make_objectcode_format4(section* curSection, token* Token,int index, int* obj_index);
+void make_objectcode_literal(section* curSection, int* lit_index, int* obj_index);
+void make_objectcode_byte(section* curSection, token* Token, int* obj_index);
+int make_objectcode_word(section* curSection, token* Token, int* obj_index);
+int set_base(section* curSection, char* str, int* obj_index);
+_Bool is_ref(section* curSection, char* str);
+int get_register_num(char c);
