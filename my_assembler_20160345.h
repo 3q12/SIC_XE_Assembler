@@ -56,6 +56,7 @@ struct symbol_unit
 {
     char symbol[10];
     short block; // 0 = default  1 = CDATA  2 = CBLKS   //제거대상
+    _Bool isAbsoulte;
     int addr;
 };
 
@@ -83,6 +84,14 @@ struct modification_unit {
 };
 typedef struct modification_unit modify;
 
+struct location_unit {
+    int addr;
+    int block;
+};
+typedef struct location_unit lc;
+
+static int locctr;
+
 /*
 * 섹션을 관리하는 구조체이다.
 * 섹션 테이블은 리터럴테이블, 심볼 테이블,심볼 수, 각 블록별 주소값으로 구성된다.
@@ -99,7 +108,7 @@ struct section_unit {
     char EXTDEF[MAX_OPERAND][10];
     char EXTREF[MAX_OPERAND][10];
     char objCode[MAX_LINES][9];
-    int loc_table[MAX_LINES];
+    lc loc_table[MAX_LINES];
     modify modify_table[MAX_LINES];
     int modify_num;
 };
@@ -110,7 +119,6 @@ static int section_num;
 
 
 
-static int locctr;
 
 //--------------
 
@@ -127,7 +135,8 @@ int update_literal_addr(section* curSection, short blockFlag, int* loc_index);
 int get_literal_addr(section* curSection, char* str);
 section* init_section(int section_num);
 int add_symbol(section* curSection,token* Token, short blockFlag);
-void add_literal(section* curSection, token* Token);
+int literal_parsing(section* curSection, token* Token);
+int symbol_parsing(section** curSection, token* Token, short* blockFlag, int* loc_index);
 int search_symbol_addr(section* curSection, char* str);
 void make_opcode_output(char* file_name);
 
