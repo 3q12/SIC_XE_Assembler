@@ -45,8 +45,10 @@ public class LiteralTable {
 	 * @return literal이 가지고 있는 주소값. 해당 literal이 없을 경우 -1 리턴
 	 */
 	public int search(String literal) {
-		int address = 0;
-		//...
+		int address = -1;
+		int index = literalList.indexOf(literal);
+		if(index>=0)
+			address = locationList.get(index);
 		return address;
 	}
 	

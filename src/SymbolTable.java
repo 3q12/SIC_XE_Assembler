@@ -47,8 +47,10 @@ public class SymbolTable {
 	 * @return symbol이 가지고 있는 주소값. 해당 symbol이 없을 경우 -1 리턴
 	 */
 	public int search(String symbol) {
-		int address = 0;
-		//...
+		int address = -1;
+		int index = symbolList.indexOf(symbol);
+		if(index>=0)
+			address = locationList.get(index);
 		return address;
 	}
 	

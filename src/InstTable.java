@@ -54,7 +54,7 @@ public class InstTable {
 class Instruction {
 
 	 private String instruction;
-	 private String opcode;
+	 private int opcode;
 	 private int numberOfOperand;
 
 	/** instruction이 몇 바이트 명령어인지 저장. 이후 편의성을 위함 */
@@ -77,7 +77,7 @@ class Instruction {
 		String split[] = line.split("\t");
 		this.instruction = split[0];
 		this.format = Integer.parseInt(split[1]);
-		this.opcode = split[2];
+		this.opcode = Integer.parseInt(split[2],16);
 		this.numberOfOperand = Integer.parseInt(split[3]);
 	}
 	
@@ -89,7 +89,7 @@ class Instruction {
 		return instruction;
 	}
 
-	public String getOpcode() {
+	public int getOpcode() {
 		return opcode;
 	}
 
