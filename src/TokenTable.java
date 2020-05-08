@@ -108,6 +108,13 @@ public class TokenTable {
         }
     }
 
+    /**
+     * 심볼을 찾아 덧셈과 뺼셈 연산을 한다.
+     *
+     * @param formula
+     * @param addr
+     * @return : 계산된 결과값
+     */
     public int calSymbol(String formula, int addr) throws SymbolNotFoundException, WrongFormulaException {
         int operand[] = new int[2];
         if (formula.contains("+")) {
@@ -208,10 +215,24 @@ public class TokenTable {
         }
     }
 
+    /**
+     * makeObjectCode 과정에서 사용한다.
+     * Token과 Instruction 을 참조하여 Format1 objectcode를 생성하고, 이를 저장한다.
+     *
+     * @param token
+     * @param inst
+     */
     private void makeObjectCodeFormat1(Token token, Instruction inst) {
         token.setObjectCode(String.format("%02X", inst.getOpcode()));
     }
 
+    /**
+     * makeObjectCode 과정에서 사용한다.
+     * Token과 Instruction 을 참조하여 Format2 objectcode를 생성하고, 이를 저장한다.
+     *
+     * @param token
+     * @param inst
+     */
     private void makeObjectCodeFormat2(Token token, Instruction inst) throws WrongRegisterCodeException {
         long objectCode = inst.getOpcode() << 8;
         for (int i = 0; i < token.getOperand().length; i++) {
@@ -225,6 +246,12 @@ public class TokenTable {
         token.setObjectCode(String.format("%04X", objectCode));
     }
 
+    /**
+     * makeObjectCodeFormat2 과정에서 사용한다.
+     * RegisterCode을 입력받아 맞는 레지스터 번호를 리턴한다.
+     *
+     * @param register
+     */
     private int getRegisterNum(String register) throws WrongRegisterCodeException {
         if (register.equals("A")) return 0;
         else if (register.equals("X")) return 1;
@@ -236,6 +263,13 @@ public class TokenTable {
         else throw new WrongRegisterCodeException(register);
     }
 
+    /**
+     * makeObjectCode 과정에서 사용한다.
+     * Token과 Instruction 을 참조하여 Format3 objectcode를 생성하고, 이를 저장한다.
+     *
+     * @param token
+     * @param inst
+     */
     private void makeObjectCodeFormat3(Token token, Instruction inst) throws SymbolNotFoundException {
         long objectCode = inst.getOpcode() << 16;
         if (token.getOperand().length == 2 && token.getOperand()[1].equals("X"))
@@ -267,6 +301,13 @@ public class TokenTable {
         token.setObjectCode(String.format("%06X", objectCode));
     }
 
+    /**
+     * makeObjectCode 과정에서 사용한다.
+     * Token과 Instruction 을 참조하여 Format4 objectcode를 생성하고, 이를 저장한다.
+     *
+     * @param token
+     * @param inst
+     */
     private void makeObjectCodeFormat4(Token token, Instruction inst) throws SymbolNotFoundException {
         long objectCode = inst.getOpcode() << 24;
         int addr = 0;
@@ -290,6 +331,14 @@ public class TokenTable {
         token.setObjectCode(String.format("%08X", objectCode));
     }
 
+    /**
+     *  Modification Record에 추가되어야 할 항목을 추가한다.
+     *
+     * @param addr
+     * @param ref
+     * @param size
+     * @param sign
+     */
     private void addModifyRecord(long addr, String ref, int size, char sign) throws SymbolNotFoundException {
         Boolean findRef = Boolean.FALSE;
         int refIndex = 0;
@@ -437,9 +486,9 @@ class Token {
      */
     public void setFlag(int flag, int value) {
         if (value == 1) {
-            this.nixbpe += flag - (this.nixbpe & flag);
+            this.nixbpe += flag - getFlag(flag);
         } else if (value == 0) {
-            this.nixbpe -= (this.nixbpe & flag);
+            this.nixbpe -= getFlag(flag);
         }
 
     }
