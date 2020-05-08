@@ -93,10 +93,6 @@ class Instruction {
 		return opcode;
 	}
 
-	public int getNumberOfOperand() {
-		return numberOfOperand;
-	}
-
 	public int getFormat() {
 		return format;
 	}
