@@ -2,6 +2,7 @@ import exception.*;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -48,7 +49,7 @@ public class Assembler {
      * Token, 또는 지시어에 따라 만들어진 오브젝트 코드들을 출력 형태로 저장하는 공간.
      * 필요한 경우 String 대신 별도의 클래스를 선언하여 ArrayList를 교체해도 무방함.
      */
-    ArrayList<String> codeList;
+    ArrayList<AssembledCode> codeList;
 
     /**
      * 클래스 초기화. instruction Table을 초기화와 동시에 세팅한다.
@@ -61,7 +62,7 @@ public class Assembler {
         symtabList = new ArrayList<SymbolTable>();
         literaltabList = new ArrayList<LiteralTable>();
         TokenList = new ArrayList<TokenTable>();
-        codeList = new ArrayList<String>();
+        codeList = new ArrayList<AssembledCode>();
     }
 
     /**
@@ -177,17 +178,20 @@ public class Assembler {
      */
     private void pass2() throws SyntaxErrorException {
         for (int i = 0; i < TokenList.size(); i++) {
+            this.codeList.add(new AssembledCode(TokenList.get(i)));
             for (int j = 0; j < TokenList.get(i).getTokenList().size(); j++) {
                 try {
                     TokenList.get(i).makeObjectCode(j);
-                } catch (SymbolNotFoundException e ) {
+                    this.codeList.get(i).addObjectCode(TokenList.get(i).getObjectCode(j), TokenList.get(i).getTokenList().get(j).getLocation());
+                } catch (SymbolNotFoundException e) {
                     throw new SyntaxErrorException(" line : " + i + " '" + e.getMessage() + "' cannot find Symbol");
-                } catch (WrongFormulaException e){
-                    throw new  SyntaxErrorException(" line : " + i + " '"+e.getMessage() + "' Wrong Formula");
-                } catch (WrongRegisterCodeException e){
-                    throw new  SyntaxErrorException(" line : " + i + " '"+e.getMessage() + "' Wrong Register Code");
+                } catch (WrongFormulaException e) {
+                    throw new SyntaxErrorException(" line : " + i + " '" + e.getMessage() + "' Wrong Formula");
+                } catch (WrongRegisterCodeException e) {
+                    throw new SyntaxErrorException(" line : " + i + " '" + e.getMessage() + "' Wrong Register Code");
                 }
             }
+            this.codeList.get(i).addModification(TokenList.get(i).getModificationRecords());
         }
     }
 
@@ -198,57 +202,49 @@ public class Assembler {
      */
     private void printObjectCode(String fileName) throws FileNotFoundException {
         PrintWriter writer = new PrintWriter(fileName + ".txt");
+
         for (int i = 0; i < TokenList.size(); i++) {
-            TokenTable tokenTable = TokenList.get(i);
             long startAddr = 0;
             Boolean doPrint = false;
             String tRecord = "";
-            int sectionSize = 0;
-            for (int j = tokenTable.getTokenList().size() - 1; j > 0; j--)
-                if (!tokenTable.getToken(j).getOperator().equals("EQU")) {
-                    sectionSize = tokenTable.getToken(j).getLocation() + tokenTable.getToken(j).getByteSize();
-                    break;
+            AssembledCode assembledCode = codeList.get(i);
+            writer.printf("H%-6s%06X%06X\n", assembledCode.getSectionName(), assembledCode.getStartAddr(), assembledCode.getSectionSize());
+            if (!assembledCode.getDefineRecord().isEmpty()) {
+                writer.print("D");
+                for (int j = 0; j < assembledCode.getDefineRecord().size(); j++) {
+                    writer.printf("%-6s", assembledCode.getDefineRecord().get(j));
+                    writer.printf("%06X", symtabList.get(i).search(assembledCode.getDefineRecord().get(j)));
                 }
-            for (int j = 0; j < tokenTable.getTokenList().size(); j++) {
-                Token token = tokenTable.getToken(j);
-                if (token.getLabel().equals("."))
+                writer.println();
+            }
+            if (!assembledCode.getReferRecord().isEmpty()) {
+                writer.print("R");
+                for (int j = 0; j < assembledCode.getReferRecord().size(); j++)
+                    writer.printf("%-6s", assembledCode.getReferRecord().get(j));
+                writer.println();
+            }
+            for (int j = 1; j < assembledCode.getObjectCode().size(); j++) {
+                String objectCode = assembledCode.getObjectCode().get(j);
+                if (objectCode == null) {
+                   if (tRecord.length()>0 && !(assembledCode.getObjectCode().get(j-1)!= null && assembledCode.getObjectCode().get(j-1).equals("4F0000")))
+                        doPrint = true;
                     continue;
-                if (j == 0)
-                    writer.printf("H%-6s%06X%06X\n", token.getLabel(), 0, sectionSize);
-                else if (token.getOperator().equals("EXTDEF") || token.getOperator().equals("EXTREF")) {
-                    if (token.getOperator().equals("EXTDEF"))
-                        writer.print("D");
-                    else
-                        writer.print("R");
-                    for (int k = 0; k < token.getOperand().length; k++) {
-                        writer.printf("%-6s", token.getOperand()[k]);
-                        if (token.getOperator().equals("EXTDEF"))
-                            writer.printf("%06X", symtabList.get(i).search(token.getOperand()[k]));
-                    }
-                    writer.println();
-                } else {
-                    if (tokenTable.getObjectCode(j) == null) {
-                        if (!token.getOperator().equals("END"))
-                            doPrint = true;
-                        continue;
-                    }
-                    if (tRecord.length() / 2 + token.getByteSize() > 0x1E || doPrint == true) {
-                        writer.printf("T%06X%02X%s\n", startAddr, tRecord.length() / 2, tRecord);
-                        startAddr = token.getLocation();
-                        tRecord = "";
-                        doPrint = false;
-                    }
-                    tRecord += tokenTable.getObjectCode(j);
                 }
+                if (tRecord.length() / 2 + objectCode.length()/2 > 0x1E || doPrint == true) {
+                    writer.printf("T%06X%02X%s\n", startAddr, tRecord.length() / 2, tRecord);
+                    startAddr = assembledCode.getLocationCounter().get(j);
+                    tRecord = "";
+                    doPrint = false;
+                }
+                tRecord += objectCode;
             }
             if (tRecord.length() > 0)
                 writer.printf("T%06X%02X%s\n", startAddr, tRecord.length() / 2, tRecord);
-            if (!tokenTable.getModificationRecords().isEmpty()) {
-                for (int j = 0; j < tokenTable.getModificationRecords().size(); j++) {
-                    ModificationRecord mRec = tokenTable.getModificationRecords().get(j);
+            if (!assembledCode.getModificationRecords().isEmpty())
+                for (int j = 0; j < assembledCode.getModificationRecords().size(); j++) {
+                    ModificationRecord mRec = assembledCode.getModificationRecords().get(j);
                     writer.printf("M%06X%02X%s\n", mRec.getLocation(), mRec.getSize(), mRec.getSymbol());
                 }
-            }
             if (i == 0)
                 writer.printf("E%06X\n\n", 0);
             else
@@ -256,5 +252,4 @@ public class Assembler {
         }
         writer.flush();
     }
-
 }

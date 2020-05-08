@@ -38,7 +38,7 @@ public class SymbolTable {
 	 * @param newLocation : 새로 바꾸고자 하는 주소값
 	 */
 	public void modifySymbol(String symbol, int newLocation) {
-		
+		this.locationList.set(this.symbolList.indexOf(symbol),newLocation);
 	}
 	
 	/**
