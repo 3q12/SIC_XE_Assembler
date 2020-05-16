@@ -23,7 +23,7 @@ def generateObjectCode(token, sectionTable):
         elif token.operator == "BYTE":
             token.objectCode = generateByte(token)
         elif token.operator == "Literal":
-            token.objectCode = generateLiteral(token, sectionTable.literalTable)
+            token.objectCode = generateLiteral(sectionTable.literalTable)
 
 
 def generateFormat1(inst):
@@ -140,12 +140,12 @@ def generateByte(token):
     return objectCode
 
 
-def generateLiteral(token, literalTable):
-    for i in literalTable:
-        objectCode = ""
-        if i.literal[0:2] == "X'":
-            objectCode = i.literal[2:-1]
-        else:
-            for j in i.literal[2:-1]:
-                objectCode = objectCode + '{:02X}'.format(ord(j))
-        return objectCode
+def generateLiteral(literalTable):
+    objectCode = ""
+    if literalTable[0].literal[0:2] == "X'":
+        objectCode = literalTable[0].literal[2:-1]
+    else:
+        for i in literalTable[0].literal[2:-1]:
+            objectCode = objectCode + '{:02X}'.format(ord(i))
+    literalTable.pop(0)
+    return objectCode
